@@ -2,11 +2,10 @@ import { db } from "../../../db/database";
 import type { Transaction } from "../types/transaction";
 
 export const transactionService = {
-  async create(transaction: Omit<Transaction, "id" | "createdAt" | "updatedAt">): Promise<Transaction> {
+  async create(transaction: Omit<Transaction, "id" | "createdAt">): Promise<Transaction> {
     const newTransaction: Transaction = {
       id: crypto.randomUUID(),
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
+      createdAt: new Date(),
       ...transaction,
     };
 
@@ -15,10 +14,7 @@ export const transactionService = {
   },
 
   async update(transaction: Transaction): Promise<void> {
-    await db.transactions.update(transaction.id, {
-      ...transaction,
-      updatedAt: Date.now(),
-    });
+    await db.transactions.update(transaction.id, transaction);
   },
 
   async delete(id: string): Promise<void> {

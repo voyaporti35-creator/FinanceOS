@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Badge, Button, Card, EmptyState, PageHeader, Spinner, Table } from "../../../components/ui";
+import { useAccountStore } from "../../accounts/store/accountStore";
 import { useTransactions } from "../hooks/useTransactions";
 import { TransactionForm } from "../components/TransactionForm";
 import { formatCurrency, formatTransactionType } from "../utils/transactionUtils";
@@ -7,17 +8,18 @@ import type { Transaction } from "../types/transaction";
 
 export default function TransactionsPage() {
   const { transactions, isLoading, error, createTransaction, updateTransaction, deleteTransaction } = useTransactions();
+  const accounts = useAccountStore((state) => state.accounts);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [isCreating, setIsCreating] = useState(false);
 
   const totalAmount = useMemo(() => transactions.reduce((sum, transaction) => sum + transaction.amount, 0), [transactions]);
 
-  const handleCreate = async (payload: Omit<Transaction, "id" | "createdAt" | "updatedAt">) => {
+  const handleCreate = async (payload: Omit<Transaction, "id" | "createdAt">) => {
     await createTransaction(payload);
     setIsCreating(false);
   };
 
-  const handleUpdate = async (payload: Omit<Transaction, "id" | "createdAt" | "updatedAt">) => {
+  const handleUpdate = async (payload: Omit<Transaction, "id" | "createdAt">) => {
     if (!editingTransaction) {
       return;
     }
@@ -25,6 +27,8 @@ export default function TransactionsPage() {
     await updateTransaction({ ...editingTransaction, ...payload });
     setEditingTransaction(null);
   };
+
+  const accountLookup = useMemo(() => new Map(accounts.map((account) => [account.id, account.name])), [accounts]);
 
   return (
     <div className="space-y-6">
@@ -78,9 +82,9 @@ export default function TransactionsPage() {
               {transactions.map((transaction) => (
                 <tr key={transaction.id}>
                   <td className="px-4 py-3">{transaction.date}</td>
-                  <td className="px-4 py-3">{transaction.description}</td>
-                  <td className="px-4 py-3">{transaction.accountId}</td>
-                  <td className="px-4 py-3">{transaction.categoryId}</td>
+                  <td className="px-4 py-3">{transaction.description ?? "Sin descripción"}</td>
+                  <td className="px-4 py-3">{accountLookup.get(transaction.accountId) ?? transaction.accountId}</td>
+                  <td className="px-4 py-3">{transaction.category ?? "Sin categoría"}</td>
                   <td className="px-4 py-3">
                     <Badge tone={transaction.type === "income" ? "positive" : transaction.type === "expense" ? "warning" : "default"}>{formatTransactionType(transaction.type)}</Badge>
                   </td>

@@ -7,7 +7,7 @@ interface TransactionStoreState {
   isLoading: boolean;
   error: string | null;
   loadTransactions: () => Promise<void>;
-  createTransaction: (transaction: Omit<Transaction, "id" | "createdAt" | "updatedAt">) => Promise<void>;
+  createTransaction: (transaction: Omit<Transaction, "id" | "createdAt">) => Promise<void>;
   updateTransaction: (transaction: Transaction) => Promise<void>;
   deleteTransaction: (id: string) => Promise<void>;
 }

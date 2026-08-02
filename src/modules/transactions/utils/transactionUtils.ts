@@ -5,7 +5,6 @@ export function formatTransactionType(type: Transaction["type"]): string {
     income: "Ingreso",
     expense: "Gasto",
     transfer: "Transferencia",
-    adjustment: "Ajuste",
   };
 
   return labels[type];

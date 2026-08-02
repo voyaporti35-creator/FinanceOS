@@ -1,15 +1,13 @@
-export type TransactionType = "income" | "expense" | "transfer" | "adjustment";
+export type TransactionType = "income" | "expense" | "transfer";
 
 export interface Transaction {
   id: string;
-  date: string;
-  amount: number;
-  description: string;
   accountId: string;
-  categoryId: string;
   type: TransactionType;
-  notes: string;
-  tags: string[];
-  createdAt: number;
-  updatedAt: number;
+  amount: number;
+  date: string;
+  category?: string;
+  description?: string;
+  transferId?: string;
+  createdAt: Date;
 }

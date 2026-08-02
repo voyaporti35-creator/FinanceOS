@@ -1,17 +1,20 @@
 import { useMemo, useState } from "react";
 import { Badge, Button, Card, EmptyState, PageHeader, Spinner, Table } from "../../../components/ui";
+import { useTransactions } from "../../transactions/hooks/useTransactions";
 import { useAccounts } from "../hooks/useAccounts";
 import { AccountForm } from "../components/AccountForm";
+import { calculateAccountBalance } from "../utils/accountBalance";
 import type { Account } from "../types/account";
 
 export default function AccountsPage() {
   const { accounts, isLoading, error, createAccount, updateAccount, deleteAccount } = useAccounts();
+  const { transactions } = useTransactions();
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
   const [isCreating, setIsCreating] = useState(false);
 
   const totalBalance = useMemo(
-    () => accounts.reduce((sum, account) => sum + account.initialBalance, 0),
-    [accounts],
+    () => accounts.reduce((sum, account) => sum + calculateAccountBalance(account, transactions), 0),
+    [accounts, transactions],
   );
 
   const handleCreate = async (payload: Omit<Account, "id" | "createdAt">) => {
@@ -83,7 +86,7 @@ export default function AccountsPage() {
                   <td className="px-4 py-3">
                     <Badge>{account.type}</Badge>
                   </td>
-                  <td className="px-4 py-3">{account.initialBalance.toLocaleString("es-ES", { style: "currency", currency: account.currency })}</td>
+                  <td className="px-4 py-3">{calculateAccountBalance(account, transactions).toLocaleString("es-ES", { style: "currency", currency: account.currency })}</td>
                   <td className="px-4 py-3">{account.currency}</td>
                   <td className="px-4 py-3">
                     <div className="flex gap-2">

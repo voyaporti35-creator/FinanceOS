@@ -1,34 +1,34 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button, Input, Select } from "../../../components/ui";
+import { useAccountStore } from "../../accounts/store/accountStore";
 import type { Transaction, TransactionType } from "../types/transaction";
 
 interface TransactionFormProps {
   initialTransaction?: Transaction;
-  onSubmit: (transaction: Omit<Transaction, "id" | "createdAt" | "updatedAt">) => Promise<void> | void;
+  onSubmit: (transaction: Omit<Transaction, "id" | "createdAt">) => Promise<void> | void;
   onCancel: () => void;
   submitLabel: string;
 }
 
-const defaultValues: Omit<Transaction, "id" | "createdAt" | "updatedAt"> = {
+const defaultValues: Omit<Transaction, "id" | "createdAt"> = {
   date: new Date().toISOString().slice(0, 10),
   amount: 0,
   description: "",
   accountId: "",
-  categoryId: "",
   type: "expense",
-  notes: "",
-  tags: [],
+  category: undefined,
+  transferId: undefined,
 };
 
 const transactionTypes: Array<{ value: TransactionType; label: string }> = [
   { value: "income", label: "Ingreso" },
   { value: "expense", label: "Gasto" },
   { value: "transfer", label: "Transferencia" },
-  { value: "adjustment", label: "Ajuste" },
 ];
 
 export function TransactionForm({ initialTransaction, onSubmit, onCancel, submitLabel }: TransactionFormProps) {
-  const [form, setForm] = useState<Omit<Transaction, "id" | "createdAt" | "updatedAt">>(defaultValues);
+  const accounts = useAccountStore((state) => state.accounts);
+  const [form, setForm] = useState<Omit<Transaction, "id" | "createdAt">>(defaultValues);
 
   useEffect(() => {
     if (initialTransaction) {
@@ -37,16 +37,23 @@ export function TransactionForm({ initialTransaction, onSubmit, onCancel, submit
         amount: initialTransaction.amount,
         description: initialTransaction.description,
         accountId: initialTransaction.accountId,
-        categoryId: initialTransaction.categoryId,
         type: initialTransaction.type,
-        notes: initialTransaction.notes,
-        tags: initialTransaction.tags,
+        category: initialTransaction.category,
+        transferId: initialTransaction.transferId,
       });
     }
   }, [initialTransaction]);
 
+  const accountOptions = useMemo(
+    () => accounts.map((account) => ({ value: account.id, label: account.name })),
+    [accounts],
+  );
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!form.accountId) {
+      return;
+    }
     await onSubmit(form);
   };
 
@@ -57,11 +64,16 @@ export function TransactionForm({ initialTransaction, onSubmit, onCancel, submit
         <Input label="Importe" type="number" step="0.01" value={form.amount} onChange={(event) => setForm({ ...form, amount: Number(event.target.value) })} />
       </div>
 
-      <Input label="Descripción" value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} />
+      <Input label="Descripción" value={form.description ?? ""} onChange={(event) => setForm({ ...form, description: event.target.value })} />
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Input label="Cuenta" value={form.accountId} onChange={(event) => setForm({ ...form, accountId: event.target.value })} />
-        <Input label="Categoría" value={form.categoryId} onChange={(event) => setForm({ ...form, categoryId: event.target.value })} />
+        <Select
+          label="Cuenta"
+          value={form.accountId}
+          onChange={(event) => setForm({ ...form, accountId: event.target.value })}
+          options={accountOptions}
+        />
+        <Input label="Categoría" value={form.category ?? ""} onChange={(event) => setForm({ ...form, category: event.target.value })} />
       </div>
 
       <Select
@@ -70,9 +82,6 @@ export function TransactionForm({ initialTransaction, onSubmit, onCancel, submit
         onChange={(event) => setForm({ ...form, type: event.target.value as TransactionType })}
         options={transactionTypes}
       />
-
-      <Input label="Notas" value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })} />
-      <Input label="Etiquetas (separadas por coma)" value={form.tags.join(", ")} onChange={(event) => setForm({ ...form, tags: event.target.value.split(",").map((item) => item.trim()).filter(Boolean) })} />
 
       <div className="flex justify-end gap-3">
         <Button type="button" variant="secondary" onClick={onCancel}>
