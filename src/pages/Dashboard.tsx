@@ -1,10 +1,30 @@
 import { ArrowDownRight, ArrowUpRight, CreditCard, PiggyBank, Wallet2 } from "lucide-react";
+import { useEffect, useMemo } from "react";
 import KpiCard from "../components/ui/KpiCard";
 import { PanelCard } from "../components/ui/PanelCard";
 import { useFinanceStore } from "../stores/financeStore";
 
 export default function Dashboard() {
-  const balance = useFinanceStore((state) => state.balance);
+  const { transactions, loadTransactions } = useFinanceStore();
+
+  useEffect(() => {
+    void loadTransactions();
+  }, [loadTransactions]);
+
+  const balance = useMemo(() =>
+    transactions.reduce((sum, transaction) => {
+      if (transaction.type === "income") {
+        return sum + transaction.amount;
+      }
+
+      if (transaction.type === "expense") {
+        return sum - transaction.amount;
+      }
+
+      return sum;
+    }, 0),
+    [transactions],
+  );
 
   const kpis = [
     {
