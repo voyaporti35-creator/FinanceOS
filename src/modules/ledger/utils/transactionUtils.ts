@@ -5,6 +5,7 @@ export function getTransactionLabel(transaction: Transaction): string {
     income: "Ingreso",
     expense: "Gasto",
     transfer: "Transferencia",
+    adjustment: "Ajuste",
   };
 
   return labels[transaction.type] ?? transaction.type;

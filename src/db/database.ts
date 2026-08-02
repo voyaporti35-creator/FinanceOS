@@ -1,7 +1,7 @@
 import Dexie from "dexie";
 import type { Table } from "dexie";
 import type { Account } from "../modules/accounts/types/account";
-import type { Transaction } from "../modules/ledger/types/transaction";
+import type { Transaction } from "../modules/transactions/types/transaction";
 
 class FinanceDatabase extends Dexie {
   transactions!: Table<Transaction>;

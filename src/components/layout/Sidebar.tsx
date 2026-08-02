@@ -4,7 +4,7 @@ import { NavLink } from "react-router-dom";
 const links = [
   { to: "/", label: "Resumen", icon: LayoutGrid },
   { to: "/accounts", label: "Cuentas", icon: Wallet },
-  { to: "/movimientos", label: "Movimientos", icon: BarChart3 },
+  { to: "/transactions", label: "Movimientos", icon: BarChart3 },
   { to: "/presupuesto", label: "Presupuesto", icon: Wallet },
   { to: "/objetivos", label: "Objetivos", icon: PiggyBank },
   { to: "/configuracion", label: "Configuración", icon: Settings },
