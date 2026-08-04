@@ -89,8 +89,8 @@ export function useDashboard() {
             snapshot.savingsRate,
 
           // Salud financiera
-          financialHealthScore:
-            health.score,
+          financialHealth:
+  health,
 
           // Actividad
           accountCount:

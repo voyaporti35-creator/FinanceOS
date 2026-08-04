@@ -9,8 +9,45 @@ import { PanelCard } from "../../../components/ui/PanelCard";
 import { useAnalytics } from "../../../core/analytics/hooks/useAnalytics";
 
 
-export function FinancialHealthCard() {
+function ScoreBar({
+  label,
+  value,
+}: {
+  label: string;
+  value: number;
+}) {
+  return (
+    <div className="space-y-1">
 
+      <div className="flex justify-between text-sm">
+
+        <span className="text-slate-400">
+          {label}
+        </span>
+
+        <span className="text-white">
+          {value}/100
+        </span>
+
+      </div>
+
+      <div className="h-2 rounded-full bg-slate-800">
+
+        <div
+          className="h-2 rounded-full bg-emerald-400"
+          style={{
+            width: `${value}%`,
+          }}
+        />
+
+      </div>
+
+    </div>
+  );
+}
+
+
+export function FinancialHealthCard() {
 
   const {
     analytics,
@@ -18,13 +55,9 @@ export function FinancialHealthCard() {
   } = useAnalytics();
 
 
-
   if (isLoading || !analytics) {
-
     return null;
-
   }
-
 
 
   const {
@@ -35,7 +68,6 @@ export function FinancialHealthCard() {
   } = analytics;
 
 
-
   const HealthIcon =
     health.level === "excellent" ||
     health.level === "good"
@@ -43,15 +75,11 @@ export function FinancialHealthCard() {
       : AlertTriangle;
 
 
-
   return (
 
     <PanelCard
-
       title="Salud financiera"
-
       subtitle="Análisis automático de tu situación"
-
     >
 
       <div className="space-y-5">
@@ -62,9 +90,7 @@ export function FinancialHealthCard() {
 
           <div className="flex items-center gap-3">
 
-
             <HealthIcon className="size-8 text-cyan-300" />
-
 
             <div>
 
@@ -72,18 +98,13 @@ export function FinancialHealthCard() {
                 Nivel financiero
               </p>
 
-
-              <p className="text-xl font-semibold text-white">
+              <p className="text-xl font-semibold capitalize text-white">
                 {health.level}
               </p>
 
-
             </div>
 
-
           </div>
-
-
 
 
           <div className="text-right">
@@ -92,11 +113,9 @@ export function FinancialHealthCard() {
               Puntuación
             </p>
 
-
             <p className="text-3xl font-bold text-emerald-300">
               {health.score}
             </p>
-
 
           </div>
 
@@ -105,36 +124,28 @@ export function FinancialHealthCard() {
 
 
 
-
-
         <div className="grid grid-cols-2 gap-4">
 
 
           <div className="rounded-xl bg-slate-950/70 p-4">
 
-
             <p className="text-sm text-slate-400">
               Ratio deuda
             </p>
-
 
             <p className="mt-1 text-xl font-semibold text-white">
               {(debt.debtRatio * 100).toFixed(1)}%
             </p>
 
-
           </div>
-
 
 
 
           <div className="rounded-xl bg-slate-950/70 p-4">
 
-
             <p className="text-sm text-slate-400">
               Ahorro mensual
             </p>
-
 
             <p className="mt-1 text-xl font-semibold text-emerald-300">
 
@@ -148,12 +159,46 @@ export function FinancialHealthCard() {
 
             </p>
 
-
           </div>
 
 
         </div>
 
+
+
+        <div className="space-y-4 rounded-xl bg-slate-950/70 p-4">
+
+
+          <p className="text-sm font-medium text-white">
+            Desglose financiero
+          </p>
+
+
+          <ScoreBar
+            label="Capacidad de ahorro"
+            value={health.savingsScore}
+          />
+
+
+          <ScoreBar
+            label="Control de deuda"
+            value={health.debtScore}
+          />
+
+
+          <ScoreBar
+            label="Patrimonio"
+            value={health.wealthScore}
+          />
+
+
+          <ScoreBar
+            label="Liquidez"
+            value={health.liquidityScore}
+          />
+
+
+        </div>
 
 
 
@@ -170,10 +215,7 @@ export function FinancialHealthCard() {
           </p>
 
 
-
-
           <div className="space-y-2">
-
 
             {recommendations
               .slice(0, 3)
@@ -203,15 +245,12 @@ export function FinancialHealthCard() {
                 )
               )}
 
-
           </div>
-
 
         </div>
 
 
       </div>
-
 
     </PanelCard>
 

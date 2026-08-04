@@ -1,3 +1,5 @@
+import type { FinancialHealth } from "../../../core/analytics/models";
+
 export interface DashboardViewModel {
 
   // Patrimonio
@@ -13,7 +15,7 @@ export interface DashboardViewModel {
   savingsRate: number;
 
   // Salud financiera
-  financialHealthScore: number;
+  financialHealth: FinancialHealth;
 
   // Actividad
   accountCount: number;
