@@ -12,24 +12,89 @@ function formatAmount(value: number): string {
   });
 }
 
-export function CashFlowCard({ data }: CashFlowCardProps) {
+export function CashFlowCard({
+  data,
+}: CashFlowCardProps) {
+
   if (!data) {
-    return <EmptyState title="Sin flujo de caja" description="No hay movimientos disponibles para mostrar." />;
+    return (
+      <EmptyState
+        title="Sin flujo de caja"
+        description="No hay movimientos disponibles para mostrar."
+      />
+    );
   }
 
+
   return (
-    <Card title="Flujo de caja" subtitle="Balance mensual derivado del core financiero">
-      <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
-        <div className="flex items-end gap-3">
-          {[35, 40, 30, 55, 45, 70].map((height, index) => (
-            <div key={index} className="flex-1 rounded-t-xl bg-gradient-to-t from-cyan-600 to-emerald-400" style={{ height: `${height}px` }} />
-          ))}
+
+    <Card
+      title="Flujo de caja"
+      subtitle="Balance mensual derivado del core financiero"
+    >
+
+      <div className="grid gap-4 sm:grid-cols-3">
+
+
+        <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
+
+          <p className="text-sm text-slate-400">
+            Ingresos
+          </p>
+
+          <p className="mt-2 text-xl font-semibold text-emerald-300">
+            {formatAmount(data.monthlyIncome)}
+          </p>
+
         </div>
-        <div className="mt-4 flex items-center justify-between text-sm text-slate-400">
-          <span>Ingresos: {formatAmount(data.monthlyIncome)}</span>
-          <span>Gastos: {formatAmount(data.monthlyExpenses)}</span>
+
+
+
+        <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
+
+          <p className="text-sm text-slate-400">
+            Gastos
+          </p>
+
+          <p className="mt-2 text-xl font-semibold text-red-300">
+            {formatAmount(data.monthlyExpenses)}
+          </p>
+
         </div>
+
+
+
+        <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
+
+          <p className="text-sm text-slate-400">
+            Ahorro
+          </p>
+
+          <p className="mt-2 text-xl font-semibold text-cyan-300">
+            {formatAmount(data.monthlySavings)}
+          </p>
+
+        </div>
+
+
       </div>
+
+
+      <div className="mt-4 rounded-xl bg-slate-950/70 p-4">
+
+        <p className="text-sm text-slate-400">
+          Tasa de ahorro
+        </p>
+
+        <p className="mt-1 text-2xl font-bold text-white">
+          {(data.savingsRate * 100).toFixed(1)}%
+        </p>
+
+      </div>
+
+
     </Card>
+
   );
+
 }
