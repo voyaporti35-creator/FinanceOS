@@ -1,100 +1,246 @@
 import { useMemo, useState } from "react";
-import { Badge, Button, Card, EmptyState, PageHeader, Spinner, Table } from "../../../components/ui";
-import { useAccountStore } from "../../accounts/store/accountStore";
-import { useTransactions } from "../hooks/useTransactions";
+import {
+  Badge,
+  Button,
+  Card,
+  EmptyState,
+  PageHeader,
+  Spinner,
+  Table,
+} from "../../../components/ui";
+
+import { useAccounts } from "../../accounts/hooks/useAccounts";
+import { useCategories } from "../../categories/hooks/useCategories";
 import { TransactionForm } from "../components/TransactionForm";
-import { formatCurrency, formatTransactionType } from "../utils/transactionUtils";
+import { useTransactions } from "../hooks/useTransactions";
 import type { Transaction } from "../types/transaction";
 
 export default function TransactionsPage() {
-  const { transactions, isLoading, error, createTransaction, updateTransaction, deleteTransaction } = useTransactions();
-  const accounts = useAccountStore((state) => state.accounts);
-  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const {
+    transactions,
+    isLoading,
+    error,
+    createTransaction,
+    updateTransaction,
+    deleteTransaction,
+  } = useTransactions();
+
+  const { accounts } = useAccounts();
+  const { categories } = useCategories();
+
+  const [editingTransaction, setEditingTransaction] =
+    useState<Transaction | null>(null);
+
   const [isCreating, setIsCreating] = useState(false);
 
-  const totalAmount = useMemo(() => transactions.reduce((sum, transaction) => sum + transaction.amount, 0), [transactions]);
+  const totalIncome = useMemo(
+    () =>
+      transactions
+        .filter((t) => t.type === "income")
+        .reduce((sum, t) => sum + t.amount, 0),
+    [transactions]
+  );
 
-  const handleCreate = async (payload: Omit<Transaction, "id" | "createdAt">) => {
+  const totalExpense = useMemo(
+    () =>
+      transactions
+        .filter((t) => t.type === "expense")
+        .reduce((sum, t) => sum + t.amount, 0),
+    [transactions]
+  );
+
+  const handleCreate = async (
+    payload: Omit<Transaction, "id" | "createdAt">
+  ) => {
     await createTransaction(payload);
     setIsCreating(false);
   };
 
-  const handleUpdate = async (payload: Omit<Transaction, "id" | "createdAt">) => {
-    if (!editingTransaction) {
-      return;
-    }
+  const handleUpdate = async (
+    payload: Omit<Transaction, "id" | "createdAt">
+  ) => {
+    if (!editingTransaction) return;
 
-    await updateTransaction({ ...editingTransaction, ...payload });
+    await updateTransaction({
+      ...editingTransaction,
+      ...payload,
+    });
+
     setEditingTransaction(null);
   };
 
-  const accountLookup = useMemo(() => new Map(accounts.map((account) => [account.id, account.name])), [accounts]);
+  const accountName = (id: string) =>
+    accounts.find((a) => a.id === id)?.name ?? "-";
+
+  const categoryName = (id?: string) =>
+    categories.find((c) => c.id === id)?.name ?? "-";
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Transacciones"
-        subtitle="Gestiona tus movimientos financieros desde un único lugar."
+        title="Movimientos"
+        subtitle="Todos los ingresos, gastos y transferencias."
         action={
-          <Button variant="primary" onClick={() => {
-            setEditingTransaction(null);
-            setIsCreating(true);
-          }}>
-            Nueva transacción
+          <Button
+            variant="primary"
+            onClick={() => {
+              setEditingTransaction(null);
+              setIsCreating(true);
+            }}
+          >
+            Nuevo movimiento
           </Button>
         }
       />
 
       <div className="grid gap-4 md:grid-cols-3">
-        <Card title="Total del periodo" subtitle="Suma de movimientos registrados">
-          <p className="text-2xl font-semibold text-white">{formatCurrency(totalAmount)}</p>
+        <Card
+          title="Ingresos"
+          subtitle="Total registrado"
+        >
+          <p className="text-2xl font-semibold text-emerald-400">
+            {totalIncome.toLocaleString("es-ES", {
+              style: "currency",
+              currency: "EUR",
+            })}
+          </p>
         </Card>
-        <Card title="Movimientos" subtitle="Cantidad registrada">
-          <p className="text-2xl font-semibold text-white">{transactions.length}</p>
+
+        <Card
+          title="Gastos"
+          subtitle="Total registrado"
+        >
+          <p className="text-2xl font-semibold text-red-400">
+            {totalExpense.toLocaleString("es-ES", {
+              style: "currency",
+              currency: "EUR",
+            })}
+          </p>
         </Card>
-        <Card title="Estado" subtitle="Sincronización local">
-          <p className="text-2xl font-semibold text-white">{isLoading ? "Cargando" : "Listo"}</p>
+
+        <Card
+          title="Movimientos"
+          subtitle="Número total"
+        >
+          <p className="text-2xl font-semibold text-white">
+            {transactions.length}
+          </p>
         </Card>
       </div>
 
-      {error ? <p className="text-sm text-red-300">{error}</p> : null}
+      {error && (
+        <p className="text-red-400">{error}</p>
+      )}
 
-      {isCreating ? (
-        <Card title="Nueva transacción" subtitle="Registra un movimiento financiero">
-          <TransactionForm onSubmit={handleCreate} onCancel={() => setIsCreating(false)} submitLabel="Crear transacción" />
+      {isCreating && (
+        <Card
+          title="Nuevo movimiento"
+          subtitle="Registrar movimiento"
+        >
+          <TransactionForm
+            submitLabel="Guardar"
+            onSubmit={handleCreate}
+            onCancel={() => setIsCreating(false)}
+          />
         </Card>
-      ) : null}
+      )}
 
-      {editingTransaction ? (
-        <Card title="Editar transacción" subtitle="Actualiza los datos del movimiento">
-          <TransactionForm initialTransaction={editingTransaction} onSubmit={handleUpdate} onCancel={() => setEditingTransaction(null)} submitLabel="Guardar cambios" />
+      {editingTransaction && (
+        <Card
+          title="Editar movimiento"
+          subtitle="Modificar datos"
+        >
+          <TransactionForm
+            initialTransaction={editingTransaction}
+            submitLabel="Actualizar"
+            onSubmit={handleUpdate}
+            onCancel={() =>
+              setEditingTransaction(null)
+            }
+          />
         </Card>
-      ) : null}
+      )}
 
-      <Card title="Movimientos" subtitle="Listado de transacciones registradas">
+      <Card
+        title="Historial"
+        subtitle="Todos los movimientos"
+      >
         {isLoading ? (
           <Spinner />
         ) : transactions.length === 0 ? (
-          <EmptyState title="No existen movimientos todavía" description="Registra tu primera transacción para empezar a construir el ledger." />
+          <EmptyState
+            title="No hay movimientos"
+            description="Registra el primero."
+          />
         ) : (
           <div className="overflow-x-auto">
-            <Table headers={["Fecha", "Descripción", "Cuenta", "Categoría", "Tipo", "Importe", "Acciones"]}>
+            <Table
+              headers={[
+                "Fecha",
+                "Tipo",
+                "Cuenta",
+                "Categoría",
+                "Importe",
+                "Acciones",
+              ]}
+            >
               {transactions.map((transaction) => (
                 <tr key={transaction.id}>
-                  <td className="px-4 py-3">{transaction.date}</td>
-                  <td className="px-4 py-3">{transaction.description ?? "Sin descripción"}</td>
-                  <td className="px-4 py-3">{accountLookup.get(transaction.accountId) ?? transaction.accountId}</td>
-                  <td className="px-4 py-3">{transaction.category ?? "Sin categoría"}</td>
                   <td className="px-4 py-3">
-                    <Badge tone={transaction.type === "income" ? "positive" : transaction.type === "expense" ? "warning" : "default"}>{formatTransactionType(transaction.type)}</Badge>
+                    {transaction.date}
                   </td>
-                  <td className="px-4 py-3">{formatCurrency(transaction.amount)}</td>
+
+                  <td className="px-4 py-3">
+                    <Badge>
+                      {transaction.type}
+                    </Badge>
+                  </td>
+
+                  <td className="px-4 py-3">
+                    {accountName(
+                      transaction.accountId
+                    )}
+                  </td>
+
+                  <td className="px-4 py-3">
+                    {categoryName(
+                      transaction.category
+                    )}
+                  </td>
+
+                  <td className="px-4 py-3">
+                    {transaction.amount.toLocaleString(
+                      "es-ES",
+                      {
+                        style: "currency",
+                        currency: "EUR",
+                      }
+                    )}
+                  </td>
+
                   <td className="px-4 py-3">
                     <div className="flex gap-2">
-                      <Button variant="secondary" size="sm" onClick={() => setEditingTransaction(transaction)}>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() =>
+                          setEditingTransaction(
+                            transaction
+                          )
+                        }
+                      >
                         Editar
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={() => void deleteTransaction(transaction.id)}>
+
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() =>
+                          void deleteTransaction(
+                            transaction.id
+                          )
+                        }
+                      >
                         Eliminar
                       </Button>
                     </div>

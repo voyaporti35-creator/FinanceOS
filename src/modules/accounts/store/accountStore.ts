@@ -6,10 +6,12 @@ interface AccountStoreState {
   accounts: Account[];
   isLoading: boolean;
   error: string | null;
+
   loadAccounts: () => Promise<void>;
   createAccount: (account: Omit<Account, "id" | "createdAt">) => Promise<void>;
   updateAccount: (account: Account) => Promise<void>;
   deleteAccount: (id: string) => Promise<void>;
+  clearError: () => void;
 }
 
 export const useAccountStore = create<AccountStoreState>((set) => ({
@@ -17,15 +19,29 @@ export const useAccountStore = create<AccountStoreState>((set) => ({
   isLoading: false,
   error: null,
 
+  clearError: () => set({ error: null }),
+
   loadAccounts: async () => {
-    set({ isLoading: true, error: null });
+    set({
+      isLoading: true,
+      error: null,
+    });
 
     try {
       const accounts = await accountService.getAll();
-      set({ accounts, isLoading: false });
+
+      set({
+        accounts,
+      });
     } catch (error) {
       set({
-        error: error instanceof Error ? error.message : "No se pudieron cargar las cuentas",
+        error:
+          error instanceof Error
+            ? error.message
+            : "No se pudieron cargar las cuentas",
+      });
+    } finally {
+      set({
         isLoading: false,
       });
     }
@@ -34,10 +50,16 @@ export const useAccountStore = create<AccountStoreState>((set) => ({
   createAccount: async (account) => {
     try {
       const createdAccount = await accountService.create(account);
-      set((state) => ({ accounts: [createdAccount, ...state.accounts] }));
+
+      set((state) => ({
+        accounts: [createdAccount, ...state.accounts],
+      }));
     } catch (error) {
       set({
-        error: error instanceof Error ? error.message : "No se pudo crear la cuenta",
+        error:
+          error instanceof Error
+            ? error.message
+            : "No se pudo crear la cuenta",
       });
     }
   },
@@ -45,12 +67,18 @@ export const useAccountStore = create<AccountStoreState>((set) => ({
   updateAccount: async (account) => {
     try {
       await accountService.update(account);
+
       set((state) => ({
-        accounts: state.accounts.map((item) => (item.id === account.id ? account : item)),
+        accounts: state.accounts.map((item) =>
+          item.id === account.id ? account : item
+        ),
       }));
     } catch (error) {
       set({
-        error: error instanceof Error ? error.message : "No se pudo actualizar la cuenta",
+        error:
+          error instanceof Error
+            ? error.message
+            : "No se pudo actualizar la cuenta",
       });
     }
   },
@@ -58,10 +86,16 @@ export const useAccountStore = create<AccountStoreState>((set) => ({
   deleteAccount: async (id) => {
     try {
       await accountService.delete(id);
-      set((state) => ({ accounts: state.accounts.filter((item) => item.id !== id) }));
+
+      set((state) => ({
+        accounts: state.accounts.filter((item) => item.id !== id),
+      }));
     } catch (error) {
       set({
-        error: error instanceof Error ? error.message : "No se pudo eliminar la cuenta",
+        error:
+          error instanceof Error
+            ? error.message
+            : "No se pudo eliminar la cuenta",
       });
     }
   },

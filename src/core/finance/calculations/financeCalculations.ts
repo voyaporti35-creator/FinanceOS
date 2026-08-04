@@ -1,74 +1,404 @@
 import type { Account } from "../../../modules/accounts/types/account";
+import type { Asset } from "../../../modules/assets/types/asset";
+import type { Liability } from "../../../modules/liabilities/types/liability";
 import type { Transaction } from "../../../modules/transactions/types/transaction";
 import type { FinanceSnapshot } from "../types";
 
-export function calculateAccountBalance(account: Account, transactions: Transaction[]): number {
-  return transactions.reduce((balance, transaction) => {
-    if (transaction.accountId !== account.id) {
-      return balance;
-    }
+import {
+  calculateAssetCount,
+  calculateTotalAssets,
+} from "../../../modules/assets/utils/assetCalculations";
 
-    switch (transaction.type) {
-      case "income":
-        return balance + transaction.amount;
-      case "expense":
-        return balance - transaction.amount;
-      case "transfer":
-        return balance + transaction.amount;
-      default:
+import {
+  calculateLiabilityCount,
+  calculateMonthlyDebtPayment,
+  calculateTotalLiabilities,
+  calculateDebtRatio,
+} from "../../../modules/liabilities/utils/liabilityCalculations";
+
+
+
+export function calculateAccountBalance(
+  account: Account,
+  transactions: Transaction[]
+): number {
+
+  return transactions.reduce(
+    (balance, transaction) => {
+
+      if (transaction.type === "transfer") {
+
+        if (transaction.accountId === account.id) {
+          return balance - transaction.amount;
+        }
+
+        if (
+          transaction.destinationAccountId === account.id
+        ) {
+          return balance + transaction.amount;
+        }
+
         return balance;
-    }
-  }, account.initialBalance);
+      }
+
+
+      if (transaction.accountId !== account.id) {
+        return balance;
+      }
+
+
+      switch(transaction.type) {
+
+        case "income":
+          return balance + transaction.amount;
+
+        case "expense":
+          return balance - transaction.amount;
+
+        default:
+          return balance;
+      }
+
+    },
+    account.initialBalance
+  );
+
 }
 
-export function calculateLiquidity(accounts: Account[], transactions: Transaction[]): number {
-  return accounts.reduce((sum, account) => sum + calculateAccountBalance(account, transactions), 0);
+
+
+export function calculateLiquidity(
+  accounts: Account[],
+  transactions: Transaction[]
+): number {
+
+  return accounts.reduce(
+    (sum, account) =>
+      sum +
+      calculateAccountBalance(
+        account,
+        transactions
+      ),
+    0
+  );
+
 }
 
-export function calculateMonthlyIncome(transactions: Transaction[], referenceDate: Date = new Date()): number {
+
+
+export function calculateAccountCount(
+  accounts: Account[]
+): number {
+
+  return accounts.length;
+
+}
+
+
+
+export function calculateTransactionCount(
+  transactions: Transaction[]
+): number {
+
+  return transactions.length;
+
+}
+
+
+
+export function calculateLastTransactionDate(
+  transactions: Transaction[]
+): string | null {
+
+  if (transactions.length === 0) {
+    return null;
+  }
+
+
+  return (
+    transactions
+      .map(
+        transaction =>
+          transaction.date
+      )
+      .sort()
+      .at(-1)
+      ??
+      null
+  );
+
+}
+
+
+
+export function calculateNetWorth(
+  accounts: Account[],
+  transactions: Transaction[],
+  assets: Asset[],
+  liabilities: Liability[]
+): number {
+
+  return (
+    calculateLiquidity(
+      accounts,
+      transactions
+    )
+    +
+    calculateTotalAssets(
+      assets
+    )
+    -
+    calculateTotalLiabilities(
+      liabilities
+    )
+  );
+
+}
+
+
+
+export function calculateMonthlyIncome(
+  transactions: Transaction[],
+  referenceDate: Date = new Date()
+): number {
+
   return transactions
-    .filter((transaction) => transaction.type === "income" && isTransactionInMonth(transaction, referenceDate))
-    .reduce((sum, transaction) => sum + transaction.amount, 0);
+    .filter(
+      transaction =>
+        transaction.type === "income" &&
+        isTransactionInMonth(
+          transaction,
+          referenceDate
+        )
+    )
+    .reduce(
+      (sum, transaction) =>
+        sum + transaction.amount,
+      0
+    );
+
 }
 
-export function calculateMonthlyExpenses(transactions: Transaction[], referenceDate: Date = new Date()): number {
+
+
+export function calculateMonthlyExpenses(
+  transactions: Transaction[],
+  referenceDate: Date = new Date()
+): number {
+
   return transactions
-    .filter((transaction) => transaction.type === "expense" && isTransactionInMonth(transaction, referenceDate))
-    .reduce((sum, transaction) => sum + transaction.amount, 0);
+    .filter(
+      transaction =>
+        transaction.type === "expense" &&
+        isTransactionInMonth(
+          transaction,
+          referenceDate
+        )
+    )
+    .reduce(
+      (sum, transaction) =>
+        sum + transaction.amount,
+      0
+    );
+
 }
 
-export function calculateMonthlySavings(income: number, expenses: number): number {
+
+
+export function calculateMonthlySavings(
+  income:number,
+  expenses:number
+):number {
+
   return income - expenses;
+
 }
 
-export function calculateSavingsRate(income: number, savings: number): number {
-  if (income === 0) {
+
+
+export function calculateSavingsRate(
+  income:number,
+  savings:number
+):number {
+
+  if(income === 0){
     return 0;
   }
 
   return savings / income;
+
 }
 
-export function calculateInitialNetWorth(accounts: Account[]): number {
-  return accounts.reduce((sum, account) => sum + account.initialBalance, 0);
+
+
+export function calculateInitialNetWorth(
+  accounts: Account[]
+):number {
+
+  return accounts.reduce(
+    (sum,account)=>
+      sum + account.initialBalance,
+    0
+  );
+
 }
 
-export function buildFinanceSnapshot(accounts: Account[], transactions: Transaction[], referenceDate: Date = new Date()): FinanceSnapshot {
-  const monthlyIncome = calculateMonthlyIncome(transactions, referenceDate);
-  const monthlyExpenses = calculateMonthlyExpenses(transactions, referenceDate);
-  const monthlySavings = calculateMonthlySavings(monthlyIncome, monthlyExpenses);
+
+
+export function buildFinanceSnapshot(
+  accounts: Account[],
+  transactions: Transaction[],
+  referenceDate: Date = new Date(),
+  assets: Asset[] = [],
+  liabilities: Liability[] = []
+): FinanceSnapshot {
+
+
+  const monthlyIncome =
+    calculateMonthlyIncome(
+      transactions,
+      referenceDate
+    );
+
+
+  const monthlyExpenses =
+    calculateMonthlyExpenses(
+      transactions,
+      referenceDate
+    );
+
+
+  const monthlySavings =
+    calculateMonthlySavings(
+      monthlyIncome,
+      monthlyExpenses
+    );
+
+
+  const liquidityTotal =
+    calculateLiquidity(
+      accounts,
+      transactions
+    );
+
+
+  const totalAssets =
+    calculateTotalAssets(
+      assets
+    );
+
+
+  const totalLiabilities =
+    calculateTotalLiabilities(
+      liabilities
+    );
+
+
 
   return {
-    liquidityTotal: calculateLiquidity(accounts, transactions),
+
+    liquidityTotal,
+
+    totalAssets,
+
+    totalLiabilities,
+
+
+    netWorth:
+      liquidityTotal +
+      totalAssets -
+      totalLiabilities,
+
+
     monthlyIncome,
+
     monthlyExpenses,
+
     monthlySavings,
-    savingsRate: calculateSavingsRate(monthlyIncome, monthlySavings),
-    initialNetWorth: calculateInitialNetWorth(accounts),
+
+
+    savingsRate:
+      calculateSavingsRate(
+        monthlyIncome,
+        monthlySavings
+      ),
+
+
+    initialNetWorth:
+      calculateInitialNetWorth(
+        accounts
+      ),
+
+
+
+    accountCount:
+      calculateAccountCount(
+        accounts
+      ),
+
+
+    transactionCount:
+      calculateTransactionCount(
+        transactions
+      ),
+
+
+    lastTransactionDate:
+      calculateLastTransactionDate(
+        transactions
+      ),
+
+
+
+    assetCount:
+      calculateAssetCount(
+        assets
+      ),
+
+
+    liabilityCount:
+      calculateLiabilityCount(
+        liabilities
+      ),
+
+
+    monthlyDebtPayment:
+      calculateMonthlyDebtPayment(
+        liabilities
+      ),
+
+
+    debtRatio:
+      calculateDebtRatio(
+        liabilities,
+        totalAssets
+      ),
+
   };
+
 }
 
-function isTransactionInMonth(transaction: Transaction, referenceDate: Date): boolean {
-  const [year, month] = transaction.date.split("-").map(Number);
-  return year === referenceDate.getFullYear() && month - 1 === referenceDate.getMonth();
+
+
+function isTransactionInMonth(
+  transaction: Transaction,
+  referenceDate: Date
+):boolean {
+
+
+  const [
+    year,
+    month
+  ] =
+  transaction.date
+    .split("-")
+    .map(Number);
+
+
+  return (
+    year === referenceDate.getFullYear()
+    &&
+    month - 1 === referenceDate.getMonth()
+  );
+
 }

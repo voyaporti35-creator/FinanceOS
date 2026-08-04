@@ -1,13 +1,18 @@
-import { BarChart3, ChevronRight, LayoutGrid, PiggyBank, Settings, Wallet } from "lucide-react";
+import { BarChart3, ChevronRight, LayoutGrid, PiggyBank, Settings, Wallet, Tags, Archive, Landmark, CreditCard, Repeat2 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 
 const links = [
   { to: "/", label: "Resumen", icon: LayoutGrid },
   { to: "/accounts", label: "Cuentas", icon: Wallet },
   { to: "/transactions", label: "Movimientos", icon: BarChart3 },
+  { to: "/categories", label: "Categorías", icon: Tags },
+  { to: "/assets", label: "Activos", icon: Landmark },
+  { to: "/liabilities", label: "Pasivos", icon: CreditCard },
+  { to: "/recurring", label: "Recurrentes", icon: Repeat2 },
   { to: "/presupuesto", label: "Presupuesto", icon: Wallet },
   { to: "/objetivos", label: "Objetivos", icon: PiggyBank },
   { to: "/configuracion", label: "Configuración", icon: Settings },
+  { to: "/backup", label: "Backup", icon: Archive },
 ];
 
 export default function Sidebar() {

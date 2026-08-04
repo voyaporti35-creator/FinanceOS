@@ -1,0 +1,25 @@
+export const appConfig = {
+  appName: "FinanceOS",
+  version: "0.1.0",
+
+  currency: {
+    code: "EUR",
+    symbol: "€",
+    locale: "es-ES",
+  },
+
+  formatting: {
+    decimals: 2,
+    dateLocale: "es-ES",
+  },
+
+  features: {
+    recurringTransactions: true,
+    investments: false,
+    mortgage: false,
+    reports: false,
+    aiAssistant: false,
+  },
+} as const;
+
+export type AppConfig = typeof appConfig;

@@ -10,18 +10,27 @@ export const accountService = {
     };
 
     await db.accounts.add(newAccount);
+
     return newAccount;
   },
 
   async update(account: Account): Promise<void> {
-    await db.accounts.update(account.id, account);
+    await db.accounts.put(account);
   },
 
   async delete(id: string): Promise<void> {
     await db.accounts.delete(id);
   },
 
+  async getById(id: string): Promise<Account | undefined> {
+    return db.accounts.get(id);
+  },
+
   async getAll(): Promise<Account[]> {
-    return db.accounts.toArray();
+    return db.accounts.orderBy("createdAt").toArray();
+  },
+
+  async exists(id: string): Promise<boolean> {
+    return (await db.accounts.get(id)) !== undefined;
   },
 };

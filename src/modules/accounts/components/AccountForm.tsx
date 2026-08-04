@@ -23,8 +23,14 @@ const defaultValues: Omit<Account, "id" | "createdAt"> = {
   currency: "EUR",
 };
 
-export function AccountForm({ initialAccount, onSubmit, onCancel, submitLabel }: AccountFormProps) {
-  const [form, setForm] = useState<Omit<Account, "id" | "createdAt">>(defaultValues);
+export function AccountForm({
+  initialAccount,
+  onSubmit,
+  onCancel,
+  submitLabel,
+}: AccountFormProps) {
+  const [form, setForm] =
+    useState<Omit<Account, "id" | "createdAt">>(defaultValues);
 
   useEffect(() => {
     if (initialAccount) {
@@ -34,12 +40,23 @@ export function AccountForm({ initialAccount, onSubmit, onCancel, submitLabel }:
         initialBalance: initialAccount.initialBalance,
         currency: initialAccount.currency,
       });
+    } else {
+      setForm(defaultValues);
     }
   }, [initialAccount]);
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (
+    event: React.FormEvent<HTMLFormElement>
+  ) => {
     event.preventDefault();
-    await onSubmit(form);
+
+    if (!form.name.trim()) return;
+
+    await onSubmit({
+      ...form,
+      name: form.name.trim(),
+      currency: form.currency.trim().toUpperCase(),
+    });
   };
 
   return (
@@ -48,14 +65,24 @@ export function AccountForm({ initialAccount, onSubmit, onCancel, submitLabel }:
         <Input
           label="Nombre"
           value={form.name}
-          onChange={(event) => setForm({ ...form, name: event.target.value })}
+          onChange={(event) =>
+            setForm({
+              ...form,
+              name: event.target.value,
+            })
+          }
           required
         />
 
         <Select
           label="Tipo"
           value={form.type}
-          onChange={(event) => setForm({ ...form, type: event.target.value as AccountType })}
+          onChange={(event) =>
+            setForm({
+              ...form,
+              type: event.target.value as AccountType,
+            })
+          }
           options={accountTypes}
         />
       </div>
@@ -66,21 +93,37 @@ export function AccountForm({ initialAccount, onSubmit, onCancel, submitLabel }:
           type="number"
           step="0.01"
           value={form.initialBalance}
-          onChange={(event) => setForm({ ...form, initialBalance: Number(event.target.value) })}
+          onChange={(event) =>
+            setForm({
+              ...form,
+              initialBalance: Number(event.target.value) || 0,
+            })
+          }
           required
         />
 
         <Input
           label="Moneda"
+          maxLength={3}
           value={form.currency}
-          onChange={(event) => setForm({ ...form, currency: event.target.value.toUpperCase() })}
+          onChange={(event) =>
+            setForm({
+              ...form,
+              currency: event.target.value.toUpperCase(),
+            })
+          }
         />
       </div>
 
       <div className="flex justify-end gap-3">
-        <Button type="button" variant="secondary" onClick={onCancel}>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={onCancel}
+        >
           Cancelar
         </Button>
+
         <Button type="submit" variant="primary">
           {submitLabel}
         </Button>

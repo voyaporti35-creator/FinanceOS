@@ -2,14 +2,17 @@ import { db } from "../../../db/database";
 import type { Transaction } from "../types/transaction";
 
 export const transactionService = {
-  async create(transaction: Omit<Transaction, "id" | "createdAt">): Promise<Transaction> {
+  async create(
+    transaction: Omit<Transaction, "id" | "createdAt">
+  ): Promise<Transaction> {
     const newTransaction: Transaction = {
       id: crypto.randomUUID(),
-      createdAt: new Date(),
+      createdAt: Date.now(),
       ...transaction,
     };
 
     await db.transactions.add(newTransaction);
+
     return newTransaction;
   },
 
