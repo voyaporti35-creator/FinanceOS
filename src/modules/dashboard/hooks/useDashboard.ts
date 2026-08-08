@@ -4,11 +4,33 @@ import { financeService } from "../../../core/finance";
 import { calculateFinancialHealth } from "../../../core/analytics";
 
 import { recurringEngine } from "../../recurring/services/recurringEngine";
+import { recurringExecutor } from "../../recurring/services/recurringExecutor";
 import { recurringService } from "../../recurring/services/recurringService";
+
+import { useAccountStore } from "../../accounts/store/accountStore";
+import { useTransactionStore } from "../../transactions/store/transactionStore";
+import { useAssetStore } from "../../assets/store/assetStore";
+import { useLiabilityStore } from "../../liabilities/store/liabilityStore";
 
 import type { DashboardViewModel } from "../types";
 
 export function useDashboard() {
+  const loadAccounts = useAccountStore(
+    (state) => state.loadAccounts
+  );
+
+  const loadTransactions = useTransactionStore(
+    (state) => state.loadTransactions
+  );
+
+  const loadAssets = useAssetStore(
+    (state) => state.loadAssets
+  );
+
+  const loadLiabilities = useLiabilityStore(
+    (state) => state.loadLiabilities
+  );
+
   const [viewModel, setViewModel] =
     useState<DashboardViewModel | null>(null);
 
@@ -26,22 +48,36 @@ export function useDashboard() {
         setIsLoading(true);
         setError(null);
 
+        await Promise.all([
+          loadAccounts(),
+          loadTransactions(),
+          loadAssets(),
+          loadLiabilities(),
+        ]);
+
+        await recurringExecutor.execute();
+
+        await Promise.all([
+          loadAccounts(),
+          loadTransactions(),
+          loadAssets(),
+          loadLiabilities(),
+        ]);
+
         const snapshot =
           await financeService.getSnapshot();
-
-        if (!isActive) {
-          return;
-        }
-
-        const pendingRecurring =
-          await recurringEngine.getPendingTransactions();
 
         const recurringTransactions =
           await recurringService.getAll();
 
+        const pendingRecurring =
+          await recurringEngine.getPendingTransactions(
+            recurringTransactions
+          );
+
         const nextRecurring =
           recurringTransactions
-            .filter(item => item.enabled)
+            .filter((item) => item.enabled)
             .sort((a, b) =>
               a.nextExecution.localeCompare(
                 b.nextExecution
@@ -62,70 +98,44 @@ export function useDashboard() {
           });
 
         const nextViewModel: DashboardViewModel = {
-          // Patrimonio
-          netWorth:
-            snapshot.netWorth,
+          netWorth: snapshot.netWorth,
+          liquidity: snapshot.liquidityTotal,
+          assets: snapshot.totalAssets,
+          liabilities: snapshot.totalLiabilities,
 
-          liquidity:
-            snapshot.liquidityTotal,
+          monthlyIncome: snapshot.monthlyIncome,
+          monthlyExpenses: snapshot.monthlyExpenses,
+          monthlySavings: monthlyCashflow,
+          savingsRate: snapshot.savingsRate,
 
-          assets:
-            snapshot.totalAssets,
+          financialHealth: health,
 
-          liabilities:
-            snapshot.totalLiabilities,
-
-          // Flujo mensual
-          monthlyIncome:
-            snapshot.monthlyIncome,
-
-          monthlyExpenses:
-            snapshot.monthlyExpenses,
-
-          monthlySavings:
-            monthlyCashflow,
-
-          savingsRate:
-            snapshot.savingsRate,
-
-          // Salud financiera
-          financialHealth:
-  health,
-
-          // Actividad
-          accountCount:
-            snapshot.accountCount,
-
-          transactionCount:
-            snapshot.transactionCount,
-
+          accountCount: snapshot.accountCount,
+          transactionCount: snapshot.transactionCount,
           lastTransactionDate:
             snapshot.lastTransactionDate,
 
-          // Recurrentes
           nextRecurringDate:
             nextRecurring?.nextExecution ?? null,
 
           pendingRecurringCount:
             pendingRecurring.length,
 
-          // Hipoteca
           mortgageDebt:
             snapshot.totalLiabilities,
 
           mortgageMonthlyPayment:
             snapshot.monthlyDebtPayment,
 
-          mortgageFreeDate:
-            null,
+          mortgageFreeDate: null,
 
-          // Metadatos
           updatedAt:
             new Date().toLocaleString("es-ES"),
         };
 
-        setViewModel(nextViewModel);
-
+        if (isActive) {
+          setViewModel(nextViewModel);
+        }
       } catch (caughtError) {
         if (!isActive) {
           return;
@@ -136,7 +146,6 @@ export function useDashboard() {
             ? caughtError.message
             : "No se pudo cargar el dashboard"
         );
-
       } finally {
         if (isActive) {
           setIsLoading(false);
@@ -149,8 +158,12 @@ export function useDashboard() {
     return () => {
       isActive = false;
     };
-
-  }, []);
+  }, [
+    loadAccounts,
+    loadTransactions,
+    loadAssets,
+    loadLiabilities,
+  ]);
 
   return useMemo(
     () => ({
@@ -158,10 +171,6 @@ export function useDashboard() {
       isLoading,
       error,
     }),
-    [
-      viewModel,
-      isLoading,
-      error,
-    ]
+    [viewModel, isLoading, error]
   );
 }

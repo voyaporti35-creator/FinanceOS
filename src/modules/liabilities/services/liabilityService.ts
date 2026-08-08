@@ -1,57 +1,72 @@
 import { db } from "../../../db/database";
 import type { Liability } from "../types/liability";
 
-
 export const liabilityService = {
 
   async create(
-    liability: Omit<Liability, "id" | "createdAt" | "updatedAt">
+    liability: Omit<
+      Liability,
+      "id" | "createdAt" | "updatedAt"
+    >
   ): Promise<Liability> {
 
+    const now = Date.now();
+
     const newLiability: Liability = {
+
       id: crypto.randomUUID(),
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
+
+      createdAt: now,
+
+      updatedAt: now,
+
       ...liability,
+
     };
 
-
-    await db.liabilities.add(newLiability);
+    await db.liabilities.add(
+      newLiability
+    );
 
     return newLiability;
-  },
 
+  },
 
   async update(
     liability: Liability
   ): Promise<void> {
 
-    await db.liabilities.update(
-      liability.id,
-      {
-        ...liability,
-        updatedAt: Date.now(),
-      }
-    );
+    const updated =
+      await db.liabilities.update(
+        liability.id,
+        {
+
+          ...liability,
+
+          updatedAt: Date.now(),
+
+        }
+      );
+
+    if (updated === 0) {
+
+      throw new Error(
+        "El pasivo no existe"
+      );
+
+    }
 
   },
-
 
   async delete(
     id: string
   ): Promise<void> {
 
-    await db.liabilities.delete(id);
+    await db.liabilities.delete(
+      id
+    );
 
   },
-
-
-  async getAll(): Promise<Liability[]> {
-
-    return db.liabilities.toArray();
-
-  },
-
 
   async getById(
     id: string
@@ -61,6 +76,24 @@ export const liabilityService = {
 
   },
 
+  async getAll(): Promise<Liability[]> {
+
+    return db.liabilities
+      .orderBy("createdAt")
+      .toArray();
+
+  },
+
+  async exists(
+    id: string
+  ): Promise<boolean> {
+
+    return (
+      (await db.liabilities.get(id))
+      !== undefined
+    );
+
+  },
 
   async clear(): Promise<void> {
 

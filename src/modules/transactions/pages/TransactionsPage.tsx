@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+
 import {
   Badge,
   Button,
@@ -11,9 +12,12 @@ import {
 
 import { useAccounts } from "../../accounts/hooks/useAccounts";
 import { useCategories } from "../../categories/hooks/useCategories";
+
 import { TransactionForm } from "../components/TransactionForm";
 import { useTransactions } from "../hooks/useTransactions";
+
 import type { Transaction } from "../types/transaction";
+
 
 export default function TransactionsPage() {
   const {
@@ -25,58 +29,111 @@ export default function TransactionsPage() {
     deleteTransaction,
   } = useTransactions();
 
+
   const { accounts } = useAccounts();
   const { categories } = useCategories();
+
 
   const [editingTransaction, setEditingTransaction] =
     useState<Transaction | null>(null);
 
-  const [isCreating, setIsCreating] = useState(false);
+  const [isCreating, setIsCreating] =
+    useState(false);
+
 
   const totalIncome = useMemo(
     () =>
       transactions
         .filter((t) => t.type === "income")
-        .reduce((sum, t) => sum + t.amount, 0),
+        .reduce(
+          (sum, t) => sum + t.amount,
+          0
+        ),
     [transactions]
   );
+
 
   const totalExpense = useMemo(
     () =>
       transactions
         .filter((t) => t.type === "expense")
-        .reduce((sum, t) => sum + t.amount, 0),
+        .reduce(
+          (sum, t) => sum + t.amount,
+          0
+        ),
     [transactions]
   );
 
+
   const handleCreate = async (
-    payload: Omit<Transaction, "id" | "createdAt">
-  ) => {
-    await createTransaction(payload);
+  payload: Omit<
+    Transaction,
+    "id" | "createdAt" | "updatedAt"
+  >
+) => {
+
+  
+  try {
+
+    await createTransaction(
+      payload
+    );
+
+
+    
     setIsCreating(false);
-  };
+
+
+  } catch (error) {
+
+
+    console.error(
+      "PAGE CREATE TRANSACTION ERROR:",
+      error
+    );
+
+
+  }
+
+};
+
 
   const handleUpdate = async (
-    payload: Omit<Transaction, "id" | "createdAt">
+    payload: Omit<
+      Transaction,
+      "id" | "createdAt" | "updatedAt"
+    >
   ) => {
-    if (!editingTransaction) return;
+
+    if (!editingTransaction) {
+      return;
+    }
 
     await updateTransaction({
       ...editingTransaction,
       ...payload,
+      updatedAt: Date.now(),
     });
 
     setEditingTransaction(null);
   };
 
+
   const accountName = (id: string) =>
-    accounts.find((a) => a.id === id)?.name ?? "-";
+    accounts.find(
+      (a) => a.id === id
+    )?.name ?? "-";
+
 
   const categoryName = (id?: string) =>
-    categories.find((c) => c.id === id)?.name ?? "-";
+    categories.find(
+      (c) => c.id === id
+    )?.name ?? "-";
+
 
   return (
     <div className="space-y-6">
+
       <PageHeader
         title="Movimientos"
         subtitle="Todos los ingresos, gastos y transferencias."
@@ -93,44 +150,60 @@ export default function TransactionsPage() {
         }
       />
 
+
       <div className="grid gap-4 md:grid-cols-3">
+
         <Card
           title="Ingresos"
           subtitle="Total registrado"
         >
-          <p className="text-2xl font-semibold text-emerald-400">
-            {totalIncome.toLocaleString("es-ES", {
-              style: "currency",
-              currency: "EUR",
-            })}
+          <p className="text-2xl font-semibold">
+            {totalIncome.toLocaleString(
+              "es-ES",
+              {
+                style: "currency",
+                currency: "EUR",
+              }
+            )}
           </p>
         </Card>
+
 
         <Card
           title="Gastos"
           subtitle="Total registrado"
         >
-          <p className="text-2xl font-semibold text-red-400">
-            {totalExpense.toLocaleString("es-ES", {
-              style: "currency",
-              currency: "EUR",
-            })}
+          <p className="text-2xl font-semibold">
+            {totalExpense.toLocaleString(
+              "es-ES",
+              {
+                style: "currency",
+                currency: "EUR",
+              }
+            )}
           </p>
         </Card>
+
 
         <Card
           title="Movimientos"
           subtitle="Número total"
         >
-          <p className="text-2xl font-semibold text-white">
+          <p className="text-2xl font-semibold">
             {transactions.length}
           </p>
         </Card>
+
       </div>
 
+
       {error && (
-        <p className="text-red-400">{error}</p>
+        <p className="text-red-400">
+          {error}
+        </p>
       )}
+
+
 
       {isCreating && (
         <Card
@@ -140,10 +213,14 @@ export default function TransactionsPage() {
           <TransactionForm
             submitLabel="Guardar"
             onSubmit={handleCreate}
-            onCancel={() => setIsCreating(false)}
+            onCancel={() =>
+              setIsCreating(false)
+            }
           />
         </Card>
       )}
+
+
 
       {editingTransaction && (
         <Card
@@ -151,7 +228,9 @@ export default function TransactionsPage() {
           subtitle="Modificar datos"
         >
           <TransactionForm
-            initialTransaction={editingTransaction}
+            initialTransaction={
+              editingTransaction
+            }
             submitLabel="Actualizar"
             onSubmit={handleUpdate}
             onCancel={() =>
@@ -161,19 +240,27 @@ export default function TransactionsPage() {
         </Card>
       )}
 
+
+
       <Card
         title="Historial"
         subtitle="Todos los movimientos"
       >
+
         {isLoading ? (
           <Spinner />
+
         ) : transactions.length === 0 ? (
+
           <EmptyState
             title="No hay movimientos"
             description="Registra el primero."
           />
+
         ) : (
+
           <div className="overflow-x-auto">
+
             <Table
               headers={[
                 "Fecha",
@@ -184,73 +271,97 @@ export default function TransactionsPage() {
                 "Acciones",
               ]}
             >
-              {transactions.map((transaction) => (
-                <tr key={transaction.id}>
-                  <td className="px-4 py-3">
-                    {transaction.date}
-                  </td>
 
-                  <td className="px-4 py-3">
-                    <Badge>
-                      {transaction.type}
-                    </Badge>
-                  </td>
+              {transactions.map(
+                (transaction) => (
 
-                  <td className="px-4 py-3">
-                    {accountName(
-                      transaction.accountId
-                    )}
-                  </td>
+                  <tr
+                    key={transaction.id}
+                  >
 
-                  <td className="px-4 py-3">
-                    {categoryName(
-                      transaction.category
-                    )}
-                  </td>
+                    <td className="px-4 py-3">
+                      {transaction.date}
+                    </td>
 
-                  <td className="px-4 py-3">
-                    {transaction.amount.toLocaleString(
-                      "es-ES",
-                      {
-                        style: "currency",
-                        currency: "EUR",
-                      }
-                    )}
-                  </td>
 
-                  <td className="px-4 py-3">
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() =>
-                          setEditingTransaction(
-                            transaction
-                          )
+                    <td className="px-4 py-3">
+                      <Badge>
+                        {transaction.type}
+                      </Badge>
+                    </td>
+
+
+                    <td className="px-4 py-3">
+                      {accountName(
+                        transaction.accountId
+                      )}
+                    </td>
+
+
+                    <td className="px-4 py-3">
+                      {categoryName(
+                        transaction.category
+                      )}
+                    </td>
+
+
+                    <td className="px-4 py-3">
+                      {transaction.amount.toLocaleString(
+                        "es-ES",
+                        {
+                          style: "currency",
+                          currency: "EUR",
                         }
-                      >
-                        Editar
-                      </Button>
+                      )}
+                    </td>
 
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() =>
-                          void deleteTransaction(
-                            transaction.id
-                          )
-                        }
-                      >
-                        Eliminar
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+
+                    <td className="px-4 py-3">
+
+                      <div className="flex gap-2">
+
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() =>
+                            setEditingTransaction(
+                              transaction
+                            )
+                          }
+                        >
+                          Editar
+                        </Button>
+
+
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() =>
+                            void deleteTransaction(
+                              transaction.id
+                            )
+                          }
+                        >
+                          Eliminar
+                        </Button>
+
+                      </div>
+
+                    </td>
+
+                  </tr>
+
+                )
+              )}
+
             </Table>
+
           </div>
+
         )}
+
       </Card>
+
     </div>
   );
 }

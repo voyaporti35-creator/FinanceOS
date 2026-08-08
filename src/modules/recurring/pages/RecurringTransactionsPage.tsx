@@ -1,84 +1,235 @@
-import { useMemo, useState } from "react";
-import { Badge, Button, Card, EmptyState, PageHeader, Spinner, Table } from "../../../components/ui";
-import { useRecurringTransactions } from "../hooks/useRecurringTransactions";
-import { RecurringTransactionForm } from "../components/RecurringTransactionForm";
-import type { RecurringTransaction } from "../types/recurringTransaction";
+import { useState } from "react";
+
+import {
+  CalendarClock,
+} from "lucide-react";
+
+import {
+  RecurringTransactionForm,
+} from "../components/RecurringTransactionForm";
+
+import {
+  RecurringTransactionList,
+} from "../components/RecurringTransactionList";
+
+import {
+  useRecurringTransactions,
+} from "../hooks/useRecurringTransactions";
+
+import type {
+  RecurringTransaction,
+} from "../types/recurringTransaction";
 
 export default function RecurringTransactionsPage() {
-  const { recurringTransactions, isLoading, error, createRecurringTransaction, updateRecurringTransaction, deleteRecurringTransaction } = useRecurringTransactions();
-  const [editingRecurring, setEditingRecurring] = useState<RecurringTransaction | null>(null);
-  const [isCreating, setIsCreating] = useState(false);
 
-  const enabledCount = useMemo(() => recurringTransactions.filter((item) => item.enabled).length, [recurringTransactions]);
+  const {
 
-  const handleCreate = async (payload: Omit<RecurringTransaction, "id" | "createdAt" | "updatedAt">) => {
-    await createRecurringTransaction(payload);
-    setIsCreating(false);
-  };
+    createRecurringTransaction,
 
-  const handleUpdate = async (payload: Omit<RecurringTransaction, "id" | "createdAt" | "updatedAt">) => {
-    if (!editingRecurring) {
-      return;
-    }
+    updateRecurringTransaction,
 
-    await updateRecurringTransaction({ ...editingRecurring, ...payload });
-    setEditingRecurring(null);
-  };
+    recurringTransactions,
+
+    error,
+
+  } =
+    useRecurringTransactions();
+
+
+
+  const [showForm, setShowForm] =
+    useState(false);
+
+
+
+  const [
+
+    editingRecurring,
+
+    setEditingRecurring,
+
+  ] =
+    useState<
+      RecurringTransaction | undefined
+    >();
+
+
 
   return (
-    <div className="space-y-6">
-      <PageHeader title="Operaciones recurrentes" subtitle="Gestiona pagos, ingresos y cargos periódicos sin perder el control del historial." action={<Button variant="primary" onClick={() => { setEditingRecurring(null); setIsCreating(true); }}>Nueva operación</Button>} />
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card title="Operaciones activas" subtitle="Cantidad de operaciones recurrentes habilitadas">
-          <p className="text-2xl font-semibold text-white">{enabledCount}</p>
-        </Card>
-        <Card title="Total registradas" subtitle="Operaciones recurrentes en el sistema">
-          <p className="text-2xl font-semibold text-white">{recurringTransactions.length}</p>
-        </Card>
+    <div className="space-y-6">
+
+      <div className="flex items-center justify-between">
+
+        <div>
+
+          <h1 className="text-3xl font-bold">
+            Operaciones recurrentes
+          </h1>
+
+          <p className="text-slate-400">
+            Gestiona ingresos y gastos automáticos
+          </p>
+
+        </div>
+
+
+
+        <button
+          className="rounded-lg bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700"
+          onClick={() => {
+
+            setEditingRecurring(undefined);
+
+            setShowForm(!showForm);
+
+          }}
+        >
+
+          {
+            showForm
+              ? "Cancelar"
+              : "Nueva recurrencia"
+          }
+
+        </button>
+
       </div>
 
-      {error ? <p className="text-sm text-red-300">{error}</p> : null}
 
-      {isCreating ? (
-        <Card title="Crear operación recurrente" subtitle="Registra una nueva entrada periódica">
-          <RecurringTransactionForm onSubmit={handleCreate} onCancel={() => setIsCreating(false)} submitLabel="Crear operación" />
-        </Card>
-      ) : null}
 
-      {editingRecurring ? (
-        <Card title="Editar operación recurrente" subtitle="Actualiza la entrada periódica seleccionada">
-          <RecurringTransactionForm initialRecurring={editingRecurring} onSubmit={handleUpdate} onCancel={() => setEditingRecurring(null)} submitLabel="Guardar cambios" />
-        </Card>
-      ) : null}
 
-      <Card title="Listado de operaciones recurrentes" subtitle="Aquí se muestran las operaciones registradas">
-        {isLoading ? (
-          <Spinner />
-        ) : recurringTransactions.length === 0 ? (
-          <EmptyState title="No existen operaciones recurrentes" description="Añade la primera entrada periódica para prepararla para su ejecución." />
-        ) : (
-          <div className="overflow-x-auto">
-            <Table headers={["Nombre", "Tipo", "Frecuencia", "Próxima ejecución", "Estado", "Acciones"]}>
-              {recurringTransactions.map((recurring) => (
-                <tr key={recurring.id}>
-                  <td className="px-4 py-3">{recurring.name}</td>
-                  <td className="px-4 py-3"><Badge>{recurring.type}</Badge></td>
-                  <td className="px-4 py-3">{recurring.frequency}</td>
-                  <td className="px-4 py-3">{recurring.nextExecution}</td>
-                  <td className="px-4 py-3"><Badge>{recurring.enabled ? "Activa" : "Inactiva"}</Badge></td>
-                  <td className="px-4 py-3">
-                    <div className="flex gap-2">
-                      <Button variant="secondary" size="sm" onClick={() => setEditingRecurring(recurring)}>Editar</Button>
-                      <Button variant="ghost" size="sm" onClick={() => void deleteRecurringTransaction(recurring.id)}>Eliminar</Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </Table>
+
+      <div className="grid gap-4 md:grid-cols-3">
+
+        <div className="rounded-xl border border-slate-700 bg-slate-900 p-5">
+
+          <div className="flex items-center gap-3">
+
+            <CalendarClock />
+
+            <span>
+              Total recurrencias
+            </span>
+
           </div>
-        )}
-      </Card>
+
+          <p className="mt-3 text-3xl font-bold">
+
+            {recurringTransactions.length}
+
+          </p>
+
+        </div>
+
+      </div>
+
+
+
+
+
+      {error && (
+
+        <div className="rounded-lg border border-red-500 bg-red-950 p-3 text-red-300">
+
+          {error}
+
+        </div>
+
+      )}
+
+
+
+
+
+
+      {
+
+        showForm && (
+
+          <RecurringTransactionForm
+
+            initialRecurring={
+              editingRecurring
+            }
+
+            submitLabel={
+              editingRecurring
+                ? "Actualizar"
+                : "Crear"
+            }
+
+            onCancel={() => {
+
+              setEditingRecurring(undefined);
+
+              setShowForm(false);
+
+            }}
+
+            onSubmit={async (
+
+              recurring:
+                Omit<
+                  RecurringTransaction,
+                  "id" |
+                  "createdAt" |
+                  "updatedAt"
+                >
+
+            ) => {
+
+              if (editingRecurring) {
+
+                await updateRecurringTransaction({
+
+                  ...editingRecurring,
+
+                  ...recurring,
+
+                });
+
+              } else {
+
+                await createRecurringTransaction(
+                  recurring
+                );
+
+              }
+
+              setEditingRecurring(undefined);
+
+              setShowForm(false);
+
+            }}
+
+          />
+
+        )
+
+      }
+
+
+
+
+
+
+      <RecurringTransactionList
+
+        onEdit={(recurring) => {
+
+          setEditingRecurring(
+            recurring
+          );
+
+          setShowForm(true);
+
+        }}
+
+      />
+
     </div>
+
   );
+
 }

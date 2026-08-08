@@ -1,114 +1,118 @@
-import type { RecurringTransaction } from "../types/recurringTransaction";
-import { db } from "../../../db/database";
 import type { Transaction } from "../../transactions/types/transaction";
+import type { RecurringTransaction } from "../types/recurringTransaction";
 
-function addDays(date: Date, amount: number): Date {
-  const next = new Date(date);
-  next.setDate(next.getDate() + amount);
-  return next;
-}
-
-function addWeeks(date: Date, amount: number): Date {
-  return addDays(date, amount * 7);
-}
-
-function addMonths(date: Date, amount: number): Date {
-  const next = new Date(date);
-  next.setMonth(next.getMonth() + amount);
-  return next;
-}
-
-function addQuarters(date: Date, amount: number): Date {
-  return addMonths(date, amount * 3);
-}
-
-function addYears(date: Date, amount: number): Date {
-  const next = new Date(date);
-  next.setFullYear(next.getFullYear() + amount);
-  return next;
-}
+import {
+  calculateNextExecution,
+  formatDate,
+  isDue,
+} from "../utils/recurringDate";
 
 export const recurringEngine = {
-  calculateNextExecution(recurring: RecurringTransaction): string {
-    const start = new Date(recurring.nextExecution);
 
-    switch (recurring.frequency) {
-      case "daily":
-        return addDays(start, 1).toISOString().slice(0, 10);
+  generateTransaction(
+    recurring: RecurringTransaction
+  ): Transaction {
 
-      case "weekly":
-        return addWeeks(start, 1).toISOString().slice(0, 10);
+    const now = Date.now();
 
-      case "monthly":
-        return addMonths(start, 1).toISOString().slice(0, 10);
+    return {
 
-      case "quarterly":
-        return addQuarters(start, 1).toISOString().slice(0, 10);
+      id: crypto.randomUUID(),
 
-      case "yearly":
-        return addYears(start, 1).toISOString().slice(0, 10);
+      accountId:
+        recurring.accountId,
 
-      default:
-        return recurring.nextExecution;
-    }
+      destinationAccountId:
+        undefined,
+
+      type:
+        recurring.type,
+
+      amount:
+        recurring.amount,
+
+      date:
+        formatDate(
+          new Date()
+        ),
+
+      category:
+        recurring.categoryId,
+
+      description:
+        recurring.name,
+
+      transferId:
+        undefined,
+
+      createdAt:
+        now,
+
+      updatedAt:
+        now,
+
+    };
+
   },
 
-  async executeRecurringTransactions(): Promise<Transaction[]> {
-    const recurringTransactions =
-      await db.recurringTransactions.toArray();
+  isPending(
+    recurring: RecurringTransaction
+  ): boolean {
 
-    const today = new Date().toISOString().slice(0, 10);
-
-    const pending = recurringTransactions.filter(
-      (item) =>
-        item.enabled &&
-        item.nextExecution <= today
+    return isDue(
+      recurring
     );
 
-    const createdTransactions: Transaction[] = [];
+  },
 
-    for (const recurring of pending) {
-      const transaction: Transaction = {
-        id: crypto.randomUUID(),
-        accountId: recurring.accountId,
-        type: recurring.type,
-        amount: recurring.amount,
-        date: recurring.nextExecution,
-        category: recurring.categoryId,
-        description: recurring.name,
-        createdAt: Date.now(),
-      };
+  updateExecution(
+    recurring: RecurringTransaction
+  ): RecurringTransaction {
 
-      await db.transactions.add(transaction);
-
-      createdTransactions.push(transaction);
-
-      const updatedRecurring: RecurringTransaction = {
-        ...recurring,
-        lastExecution: recurring.nextExecution,
-        nextExecution: this.calculateNextExecution(recurring),
-        updatedAt: Date.now(),
-      };
-
-      await db.recurringTransactions.update(
-        recurring.id,
-        updatedRecurring
+    const today =
+      formatDate(
+        new Date()
       );
-    }
 
-    return createdTransactions;
+    return {
+
+      ...recurring,
+
+      lastExecution:
+        today,
+
+      nextExecution:
+        calculateNextExecution(
+          recurring
+        ),
+
+      updatedAt:
+        Date.now(),
+
+    };
+
   },
 
-  async getPendingTransactions(): Promise<RecurringTransaction[]> {
-    const recurringTransactions =
-      await db.recurringTransactions.toArray();
+  async getPendingTransactions(
+    recurringTransactions: RecurringTransaction[]
+  ): Promise<Transaction[]> {
 
-    const today = new Date().toISOString().slice(0, 10);
+    return recurringTransactions
 
-    return recurringTransactions.filter(
-      (item) =>
-        item.enabled &&
-        item.nextExecution <= today
-    );
+      .filter(
+        recurring =>
+          this.isPending(
+            recurring
+          )
+      )
+
+      .map(
+        recurring =>
+          this.generateTransaction(
+            recurring
+          )
+      );
+
   },
+
 };

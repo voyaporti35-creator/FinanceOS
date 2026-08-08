@@ -1,4 +1,4 @@
-import type { CashflowAnalytics } from "../models";
+import type { CashflowAnalytics } from "../models/index";
 
 export function calculateCashflow(
   monthlyIncome: number,

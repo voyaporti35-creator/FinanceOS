@@ -1,29 +1,21 @@
 export type AssetType =
-  | "bank"
-  | "cash"
   | "property"
   | "vehicle"
-  | "stock"
-  | "etf"
-  | "fund"
-  | "crypto"
-  | "gold"
-  | "silver"
-  | "pension"
+  | "investment"
+  | "cash"
   | "business"
-  | "collectible"
   | "other";
 
+
 export interface Asset {
+
   id: string;
 
   name: string;
 
   type: AssetType;
 
-  currentValue: number;
-
-  purchaseValue: number;
+  value: number;
 
   purchaseDate: string;
 

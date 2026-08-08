@@ -16,61 +16,108 @@ function calculateSavingsScore(
   income: number,
   expenses: number
 ): number {
-  if (income <= 0) return 0;
 
-  const savingsRate = (income - expenses) / income;
+  if (income <= 0) {
+    return 0;
+  }
 
-  return clamp(savingsRate * 200);
+  const savingsRate =
+    (income - expenses) / income;
+
+  return clamp(
+    savingsRate * 100
+  );
+
 }
 
 function calculateDebtScore(
   assets: number,
   debts: number
 ): number {
-  if (assets <= 0) {
-    return debts === 0 ? 100 : 0;
+
+  if (debts <= 0) {
+    return 100;
   }
 
-  const debtRatio = debts / assets;
+  if (assets <= 0) {
+    return 0;
+  }
 
-  return clamp(100 - debtRatio * 100);
+  const ratio =
+    debts / assets;
+
+  return clamp(
+    (1 - ratio) * 100
+  );
+
 }
 
 function calculateWealthScore(
   assets: number,
   debts: number
 ): number {
-  const netWorth = assets - debts;
 
-  if (netWorth <= 0) return 0;
+  const netWorth =
+    assets - debts;
 
-  return clamp(netWorth / 1000);
+  if (netWorth <= 0) {
+    return 0;
+  }
+
+  if (assets <= 0) {
+    return 0;
+  }
+
+  return clamp(
+    (netWorth / assets) * 100
+  );
+
 }
 
 function calculateLiquidityScore(
   liquidity: number,
-  income: number
+  expenses: number
 ): number {
-  if (income <= 0) return 0;
 
-  const monthsCovered = liquidity / income;
+  if (expenses <= 0) {
+    return liquidity > 0
+      ? 100
+      : 0;
+  }
 
-  return clamp(monthsCovered * 25);
+  const months =
+    liquidity / expenses;
+
+  return clamp(
+    (months / 6) * 100
+  );
+
 }
 
 function calculateLevel(
   score: number
 ): FinancialHealth["level"] {
-  if (score >= 80) return "excellent";
-  if (score >= 60) return "good";
-  if (score >= 40) return "fair";
+
+  if (score >= 80) {
+    return "excellent";
+  }
+
+  if (score >= 60) {
+    return "good";
+  }
+
+  if (score >= 40) {
+    return "fair";
+  }
 
   return "poor";
+
 }
 
 export function calculateFinancialHealth(
   input: FinancialHealthInput
 ): FinancialHealth {
+
   const {
     income,
     expenses,
@@ -79,41 +126,59 @@ export function calculateFinancialHealth(
     liquidity,
   } = input;
 
-  const savingsScore = calculateSavingsScore(
-    income,
-    expenses
-  );
+  const savingsScore =
+    calculateSavingsScore(
+      income,
+      expenses
+    );
 
-  const debtScore = calculateDebtScore(
-    assets,
-    debts
-  );
+  const debtScore =
+    calculateDebtScore(
+      assets,
+      debts
+    );
 
-  const wealthScore = calculateWealthScore(
-    assets,
-    debts
-  );
+  const wealthScore =
+    calculateWealthScore(
+      assets,
+      debts
+    );
 
-  const liquidityScore = calculateLiquidityScore(
-    liquidity,
-    income
-  );
+  const liquidityScore =
+    calculateLiquidityScore(
+      liquidity,
+      expenses
+    );
 
-  const score = Math.round(
-    (
-      savingsScore +
-      debtScore +
-      wealthScore +
-      liquidityScore
-    ) / 4
-  );
+  const score =
+    Math.round(
+      (
+        savingsScore * 0.30 +
+        debtScore * 0.25 +
+        wealthScore * 0.20 +
+        liquidityScore * 0.25
+      )
+    );
 
   return {
+
     score,
-    level: calculateLevel(score),
-    savingsScore: Math.round(savingsScore),
-    debtScore: Math.round(debtScore),
-    wealthScore: Math.round(wealthScore),
-    liquidityScore: Math.round(liquidityScore),
+
+    level:
+      calculateLevel(score),
+
+    savingsScore:
+      Math.round(savingsScore),
+
+    debtScore:
+      Math.round(debtScore),
+
+    wealthScore:
+      Math.round(wealthScore),
+
+    liquidityScore:
+      Math.round(liquidityScore),
+
   };
+
 }

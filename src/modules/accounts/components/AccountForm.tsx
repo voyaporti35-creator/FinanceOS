@@ -1,133 +1,206 @@
 import { useEffect, useState } from "react";
-import { Button, Input, Select } from "../../../components/ui";
-import type { Account, AccountType } from "../types/account";
+import type { FormEvent } from "react";
+
+import type {
+  Account,
+  AccountType,
+} from "../types/account";
+
+import { BANKS } from "../constants/banks";
 
 interface AccountFormProps {
   initialAccount?: Account;
-  onSubmit: (account: Omit<Account, "id" | "createdAt">) => Promise<void> | void;
-  onCancel: () => void;
-  submitLabel: string;
+
+  onSubmit: (
+    account: Omit<
+      Account,
+      "id" | "createdAt" | "updatedAt"
+    >
+  ) => void;
+
+  onCancel?: () => void;
 }
 
-const accountTypes: Array<{ value: AccountType; label: string }> = [
-  { value: "bank", label: "Banco" },
-  { value: "cash", label: "Efectivo" },
-  { value: "savings", label: "Ahorro" },
-  { value: "card", label: "Tarjeta" },
-];
-
-const defaultValues: Omit<Account, "id" | "createdAt"> = {
-  name: "",
-  type: "bank",
-  initialBalance: 0,
-  currency: "EUR",
-};
-
-export function AccountForm({
+export default function AccountForm({
   initialAccount,
   onSubmit,
   onCancel,
-  submitLabel,
 }: AccountFormProps) {
-  const [form, setForm] =
-    useState<Omit<Account, "id" | "createdAt">>(defaultValues);
+
+  const defaultBank = BANKS[0];
+
+  const [name, setName] = useState("");
+  const [type, setType] =
+    useState<AccountType>("bank");
+  const [initialBalance, setInitialBalance] =
+    useState(0);
+  const [selectedBankId, setSelectedBankId] =
+    useState(defaultBank.id);
 
   useEffect(() => {
-    if (initialAccount) {
-      setForm({
-        name: initialAccount.name,
-        type: initialAccount.type,
-        initialBalance: initialAccount.initialBalance,
-        currency: initialAccount.currency,
-      });
-    } else {
-      setForm(defaultValues);
+
+    if (!initialAccount) {
+      return;
     }
+
+    setName(initialAccount.name);
+    setType(initialAccount.type);
+    setInitialBalance(initialAccount.initialBalance);
+    setSelectedBankId(
+      initialAccount.bankId ?? defaultBank.id
+    );
+
   }, [initialAccount]);
 
-  const handleSubmit = async (
-    event: React.FormEvent<HTMLFormElement>
-  ) => {
+  function handleSubmit(
+    event: FormEvent<HTMLFormElement>
+  ) {
+
     event.preventDefault();
 
-    if (!form.name.trim()) return;
+    const selectedBank =
+      BANKS.find(
+        (bank) =>
+          bank.id === selectedBankId
+      ) ?? defaultBank;
 
-    await onSubmit({
-      ...form,
-      name: form.name.trim(),
-      currency: form.currency.trim().toUpperCase(),
+    onSubmit({
+
+      name,
+
+      type,
+
+      currency: "EUR",
+
+      bankId: selectedBank.id,
+
+      initialBalance,
+
+      archived:
+        initialAccount?.archived ?? false,
+
+      color: selectedBank.color,
+
+      icon: selectedBank.icon,
+
+      isDefault:
+        initialAccount?.isDefault ?? false,
+
+      displayOrder:
+        initialAccount?.displayOrder ?? 0,
+
     });
-  };
+
+    if (!initialAccount) {
+
+      setName("");
+      setInitialBalance(0);
+      setSelectedBankId(defaultBank.id);
+
+    }
+
+  }
 
   return (
-    <form className="space-y-4" onSubmit={handleSubmit}>
-      <div className="grid gap-4 md:grid-cols-2">
-        <Input
-          label="Nombre"
-          value={form.name}
-          onChange={(event) =>
-            setForm({
-              ...form,
-              name: event.target.value,
-            })
-          }
-          required
-        />
 
-        <Select
-          label="Tipo"
-          value={form.type}
-          onChange={(event) =>
-            setForm({
-              ...form,
-              type: event.target.value as AccountType,
-            })
-          }
-          options={accountTypes}
-        />
-      </div>
+    <form
+      onSubmit={handleSubmit}
+      className="space-y-4 rounded-xl border border-slate-700 bg-slate-900 p-5"
+    >
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <Input
-          label="Saldo inicial"
-          type="number"
-          step="0.01"
-          value={form.initialBalance}
-          onChange={(event) =>
-            setForm({
-              ...form,
-              initialBalance: Number(event.target.value) || 0,
-            })
-          }
-          required
-        />
+      <input
+        className="w-full rounded border border-slate-600 bg-slate-800 p-2"
+        placeholder="Nombre de la cuenta"
+        value={name}
+        onChange={(event) =>
+          setName(event.target.value)
+        }
+      />
 
-        <Input
-          label="Moneda"
-          maxLength={3}
-          value={form.currency}
-          onChange={(event) =>
-            setForm({
-              ...form,
-              currency: event.target.value.toUpperCase(),
-            })
-          }
-        />
-      </div>
+      <select
+        className="w-full rounded border border-slate-600 bg-slate-800 p-2"
+        value={selectedBankId}
+        onChange={(event) =>
+          setSelectedBankId(
+            event.target.value
+          )
+        }
+      >
+        {BANKS.map((bank) => (
+          <option
+            key={bank.id}
+            value={bank.id}
+          >
+            {bank.name}
+          </option>
+        ))}
+      </select>
 
-      <div className="flex justify-end gap-3">
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={onCancel}
+      <select
+        className="w-full rounded border border-slate-600 bg-slate-800 p-2"
+        value={type}
+        onChange={(event) =>
+          setType(
+            event.target.value as AccountType
+          )
+        }
+      >
+        <option value="bank">
+          Banco
+        </option>
+
+        <option value="cash">
+          Efectivo
+        </option>
+
+        <option value="savings">
+          Ahorro
+        </option>
+
+        <option value="card">
+          Tarjeta
+        </option>
+      </select>
+
+      <input
+        className="w-full rounded border border-slate-600 bg-slate-800 p-2"
+        type="number"
+        placeholder="Saldo inicial"
+        value={initialBalance}
+        onChange={(event) =>
+          setInitialBalance(
+            Number(event.target.value)
+          )
+        }
+      />
+
+      <div className="flex gap-2">
+
+        <button
+          type="submit"
+          className="flex-1 rounded bg-blue-600 px-4 py-2 text-white"
         >
-          Cancelar
-        </Button>
+          {initialAccount
+            ? "Guardar cambios"
+            : "Crear cuenta"}
+        </button>
 
-        <Button type="submit" variant="primary">
-          {submitLabel}
-        </Button>
+        {onCancel && (
+
+          <button
+            type="button"
+            className="rounded bg-slate-700 px-4 py-2"
+            onClick={onCancel}
+          >
+            Cancelar
+          </button>
+
+        )}
+
       </div>
+
     </form>
+
   );
+
 }

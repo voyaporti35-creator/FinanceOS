@@ -2,19 +2,21 @@ import { create } from "zustand";
 import { liabilityService } from "../services/liabilityService";
 import type { Liability } from "../types/liability";
 
-
 interface LiabilityStoreState {
+
   liabilities: Liability[];
 
   isLoading: boolean;
 
   error: string | null;
 
-
   loadLiabilities: () => Promise<void>;
 
   createLiability: (
-    liability: Omit<Liability, "id" | "createdAt" | "updatedAt">
+    liability: Omit<
+      Liability,
+      "id" | "createdAt" | "updatedAt"
+    >
   ) => Promise<void>;
 
   updateLiability: (
@@ -26,164 +28,224 @@ interface LiabilityStoreState {
   ) => Promise<void>;
 
   clearLiabilities: () => Promise<void>;
+
+  clearError: () => void;
+
 }
 
+export const useLiabilityStore =
+  create<LiabilityStoreState>((set) => ({
 
-export const useLiabilityStore = create<LiabilityStoreState>((set) => ({
+    liabilities: [],
 
-  liabilities: [],
+    isLoading: false,
 
-  isLoading: false,
+    error: null,
 
-  error: null,
+    clearError: () =>
+      set({
+        error: null,
+      }),
 
-
-  loadLiabilities: async () => {
-
-    set({
-      isLoading: true,
-      error: null,
-    });
-
-
-    try {
-
-      const liabilities = await liabilityService.getAll();
+    loadLiabilities: async () => {
 
       set({
-        liabilities,
-        isLoading: false,
+
+        isLoading: true,
+
+        error: null,
+
       });
 
+      try {
 
-    } catch (error) {
+        const liabilities =
+          await liabilityService.getAll();
 
-      set({
-        error:
-          error instanceof Error
-            ? error.message
-            : "No se pudieron cargar los pasivos",
+        if (import.meta.env.DEV) {
 
-        isLoading: false,
-      });
+          console.log(
+            "LIABILITY STORE",
+            liabilities
+          );
 
-    }
-  },
+        }
 
+        set({
 
-  createLiability: async (liability) => {
+          liabilities,
 
-    try {
+          isLoading: false,
 
-      const createdLiability =
-        await liabilityService.create(liability);
+        });
 
+      } catch (error) {
 
-      set((state) => ({
-        liabilities: [
-          createdLiability,
-          ...state.liabilities,
-        ],
-      }));
+        set({
 
+          error:
 
-    } catch (error) {
+            error instanceof Error
 
-      set({
-        error:
-          error instanceof Error
-            ? error.message
-            : "No se pudo crear el pasivo",
-      });
+              ? error.message
 
-    }
-  },
+              : "No se pudieron cargar los pasivos",
 
+          isLoading: false,
 
-  updateLiability: async (liability) => {
+        });
 
-    try {
+      }
 
-      await liabilityService.update(liability);
+    },
 
+    createLiability: async (liability) => {
 
-      set((state) => ({
-        liabilities:
-          state.liabilities.map((item) =>
-            item.id === liability.id
-              ? {
-                  ...liability,
-                  updatedAt: Date.now(),
-                }
-              : item
-          ),
-      }));
+      try {
 
+        const createdLiability =
+          await liabilityService.create(
+            liability
+          );
 
-    } catch (error) {
+        set((state) => ({
 
-      set({
-        error:
-          error instanceof Error
-            ? error.message
-            : "No se pudo actualizar el pasivo",
-      });
+          liabilities: [
 
-    }
-  },
+            createdLiability,
 
+            ...state.liabilities,
 
-  deleteLiability: async (id) => {
+          ],
 
-    try {
+        }));
 
-      await liabilityService.delete(id);
+      } catch (error) {
 
+        set({
 
-      set((state) => ({
-        liabilities:
-          state.liabilities.filter(
-            (item) => item.id !== id
-          ),
-      }));
+          error:
 
+            error instanceof Error
 
-    } catch (error) {
+              ? error.message
 
-      set({
-        error:
-          error instanceof Error
-            ? error.message
-            : "No se pudo eliminar el pasivo",
-      });
+              : "No se pudo crear el pasivo",
 
-    }
-  },
+        });
 
+      }
 
-  clearLiabilities: async () => {
+    },
 
-    try {
+    updateLiability: async (liability) => {
 
-      await liabilityService.clear();
+      try {
 
-      set({
-        liabilities: [],
-      });
+        await liabilityService.update(
+          liability
+        );
 
+        set((state) => ({
 
-    } catch (error) {
+          liabilities:
 
-      set({
-        error:
-          error instanceof Error
-            ? error.message
-            : "No se pudieron limpiar los pasivos",
-      });
+            state.liabilities.map(
+              (item) =>
 
-    }
+                item.id === liability.id
 
-  },
+                  ? liability
 
+                  : item
 
-}));
+            ),
+
+        }));
+
+      } catch (error) {
+
+        set({
+
+          error:
+
+            error instanceof Error
+
+              ? error.message
+
+              : "No se pudo actualizar el pasivo",
+
+        });
+
+      }
+
+    },
+
+    deleteLiability: async (id) => {
+
+      try {
+
+        await liabilityService.delete(
+          id
+        );
+
+        set((state) => ({
+
+          liabilities:
+
+            state.liabilities.filter(
+              (item) =>
+                item.id !== id
+            ),
+
+        }));
+
+      } catch (error) {
+
+        set({
+
+          error:
+
+            error instanceof Error
+
+              ? error.message
+
+              : "No se pudo eliminar el pasivo",
+
+        });
+
+      }
+
+    },
+
+    clearLiabilities: async () => {
+
+      try {
+
+        await liabilityService.clear();
+
+        set({
+
+          liabilities: [],
+
+        });
+
+      } catch (error) {
+
+        set({
+
+          error:
+
+            error instanceof Error
+
+              ? error.message
+
+              : "No se pudieron limpiar los pasivos",
+
+        });
+
+      }
+
+    },
+
+  }));

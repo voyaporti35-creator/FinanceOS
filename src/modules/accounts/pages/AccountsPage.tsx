@@ -1,109 +1,382 @@
 import { useMemo, useState } from "react";
-import { Badge, Button, Card, EmptyState, PageHeader, Spinner, Table } from "../../../components/ui";
-import { useTransactions } from "../../transactions/hooks/useTransactions";
+import {
+  CreditCard,
+  Landmark,
+  Search,
+  Wallet,
+} from "lucide-react";
+
+import AccountForm from "../components/AccountForm";
+import AccountList from "../components/AccountList";
 import { useAccounts } from "../hooks/useAccounts";
-import { AccountForm } from "../components/AccountForm";
-import { calculateAccountBalance } from "../utils/accountBalance";
-import type { Account } from "../types/account";
+import { useAccountBalances } from "../hooks/useAccountBalances";
+
+import type {
+  Account,
+  AccountType,
+} from "../types/account";
+
 
 export default function AccountsPage() {
-  const { accounts, isLoading, error, createAccount, updateAccount, deleteAccount } = useAccounts();
-  const { transactions } = useTransactions();
-  const [editingAccount, setEditingAccount] = useState<Account | null>(null);
-  const [isCreating, setIsCreating] = useState(false);
 
-  const totalBalance = useMemo(
-    () => accounts.reduce((sum, account) => sum + calculateAccountBalance(account, transactions), 0),
-    [accounts, transactions],
-  );
+  const {
+    accounts,
+    createAccount,
+    updateAccount,
+    deleteAccount,
+    error,
+  } = useAccounts();
 
-  const handleCreate = async (payload: Omit<Account, "id" | "createdAt">) => {
-    await createAccount(payload);
-    setIsCreating(false);
-  };
 
-  const handleUpdate = async (payload: Omit<Account, "id" | "createdAt">) => {
-    if (!editingAccount) {
-      return;
-    }
+  const balances =
+    useAccountBalances();
 
-    await updateAccount({ ...editingAccount, ...payload });
-    setEditingAccount(null);
-  };
+
+  const [showForm, setShowForm] =
+    useState(false);
+
+  const [editingAccount, setEditingAccount] =
+    useState<Account>();
+
+  const [search, setSearch] =
+    useState("");
+
+  const [filter, setFilter] =
+    useState<AccountType | "all">("all");
+
+
+  const filteredAccounts = useMemo(() => {
+
+    return accounts.filter((account) => {
+
+      const matchesSearch =
+        account.name
+          .toLowerCase()
+          .includes(
+            search.toLowerCase()
+          );
+
+
+      const matchesFilter =
+        filter === "all"
+          ? true
+          : account.type === filter;
+
+
+      return (
+        matchesSearch &&
+        matchesFilter
+      );
+
+    });
+
+  }, [
+    accounts,
+    search,
+    filter,
+  ]);
+
+
+
+  const totalBalance = useMemo(() => {
+
+    return filteredAccounts.reduce(
+      (sum, account) =>
+        sum + (balances[account.id] ?? 0),
+      0
+    );
+
+  }, [
+    filteredAccounts,
+    balances,
+  ]);
+
+
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Cuentas"
-        subtitle="Gestiona tus cuentas personales desde un único lugar."
-        action={
-          <Button variant="primary" onClick={() => {
-            setEditingAccount(null);
-            setIsCreating(true);
-          }}>
-            Nueva cuenta
-          </Button>
-        }
-      />
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card title="Saldo inicial total" subtitle="Suma de los saldos base">
-          <p className="text-2xl font-semibold text-white">{totalBalance.toLocaleString("es-ES", { style: "currency", currency: "EUR" })}</p>
-        </Card>
-        <Card title="Cuentas registradas" subtitle="Cantidad de cuentas guardadas">
-          <p className="text-2xl font-semibold text-white">{accounts.length}</p>
-        </Card>
-        <Card title="Estado" subtitle="Sincronización local">
-          <p className="text-2xl font-semibold text-white">{isLoading ? "Cargando" : "Listo"}</p>
-        </Card>
+    <div className="space-y-6">
+
+
+      <div className="flex items-center justify-between">
+
+        <div>
+
+          <h1 className="text-3xl font-bold">
+            Cuentas
+          </h1>
+
+          <p className="text-slate-400">
+            Gestiona tus cuentas bancarias
+          </p>
+
+        </div>
+
+
+        <button
+          className="rounded-lg bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700"
+          onClick={() => {
+
+            setEditingAccount(undefined);
+
+            setShowForm(!showForm);
+
+          }}
+        >
+
+          {showForm
+            ? "Cancelar"
+            : "Nueva cuenta"}
+
+        </button>
+
+
       </div>
 
-      {error ? <p className="text-sm text-red-300">{error}</p> : null}
 
-      {isCreating ? (
-        <Card title="Crear cuenta" subtitle="Registra una nueva cuenta personal">
-          <AccountForm onSubmit={handleCreate} onCancel={() => setIsCreating(false)} submitLabel="Crear cuenta" />
-        </Card>
-      ) : null}
 
-      {editingAccount ? (
-        <Card title="Editar cuenta" subtitle="Actualiza los datos de la cuenta seleccionada">
-          <AccountForm initialAccount={editingAccount} onSubmit={handleUpdate} onCancel={() => setEditingAccount(null)} submitLabel="Guardar cambios" />
-        </Card>
-      ) : null}
+      <div className="grid gap-4 md:grid-cols-3">
 
-      <Card title="Listado de cuentas" subtitle="Aquí se muestran las cuentas registradas en Dexie">
-        {isLoading ? (
-          <Spinner />
-        ) : accounts.length === 0 ? (
-          <EmptyState title="No existen cuentas todavía" description="Crea tu primera cuenta para empezar a organizar tus finanzas." />
-        ) : (
-          <div className="overflow-x-auto">
-            <Table headers={["Nombre", "Tipo", "Saldo inicial", "Moneda", "Acciones"]}>
-              {accounts.map((account) => (
-                <tr key={account.id}>
-                  <td className="px-4 py-3">{account.name}</td>
-                  <td className="px-4 py-3">
-                    <Badge>{account.type}</Badge>
-                  </td>
-                  <td className="px-4 py-3">{calculateAccountBalance(account, transactions).toLocaleString("es-ES", { style: "currency", currency: account.currency })}</td>
-                  <td className="px-4 py-3">{account.currency}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex gap-2">
-                      <Button variant="secondary" size="sm" onClick={() => setEditingAccount(account)}>
-                        Editar
-                      </Button>
-                      <Button variant="ghost" size="sm" onClick={() => void deleteAccount(account.id)}>
-                        Eliminar
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </Table>
+
+        <div className="rounded-xl border border-slate-700 bg-slate-900 p-5">
+
+          <div className="flex items-center gap-3">
+
+            <Wallet />
+
+            <span>
+              Total cuentas
+            </span>
+
           </div>
-        )}
-      </Card>
+
+
+          <p className="mt-3 text-3xl font-bold">
+
+            {filteredAccounts.length}
+
+          </p>
+
+        </div>
+
+
+
+
+        <div className="rounded-xl border border-slate-700 bg-slate-900 p-5">
+
+          <div className="flex items-center gap-3">
+
+            <CreditCard />
+
+            <span>
+              Saldo total
+            </span>
+
+          </div>
+
+
+          <p className="mt-3 text-3xl font-bold">
+
+            {totalBalance.toLocaleString(
+              "es-ES",
+              {
+                style: "currency",
+                currency: "EUR",
+              }
+            )}
+
+          </p>
+
+        </div>
+
+
+
+
+        <div className="rounded-xl border border-slate-700 bg-slate-900 p-5">
+
+          <div className="flex items-center gap-3">
+
+            <Landmark />
+
+            <span>
+              Bancos
+            </span>
+
+          </div>
+
+
+          <p className="mt-3 text-3xl font-bold">
+
+            {
+              new Set(
+                filteredAccounts.map(
+                  (a) => a.bankId
+                )
+              ).size
+            }
+
+          </p>
+
+        </div>
+
+
+      </div>
+
+
+
+
+      <div className="rounded-xl border border-slate-700 bg-slate-900 p-4">
+
+
+        <div className="flex flex-col gap-4 md:flex-row">
+
+
+          <div className="relative flex-1">
+
+
+            <Search
+              size={18}
+              className="absolute left-3 top-3 text-slate-500"
+            />
+
+
+            <input
+              className="w-full rounded-lg border border-slate-700 bg-slate-800 py-2 pl-10 pr-3"
+              placeholder="Buscar cuenta..."
+              value={search}
+              onChange={(e) =>
+                setSearch(
+                  e.target.value
+                )
+              }
+            />
+
+
+          </div>
+
+
+
+          <select
+            className="rounded-lg border border-slate-700 bg-slate-800 px-3"
+            value={filter}
+            onChange={(e) =>
+              setFilter(
+                e.target.value as
+                  | AccountType
+                  | "all"
+              )
+            }
+          >
+
+            <option value="all">
+              Todas
+            </option>
+
+            <option value="bank">
+              Bancos
+            </option>
+
+            <option value="cash">
+              Efectivo
+            </option>
+
+            <option value="savings">
+              Ahorro
+            </option>
+
+            <option value="card">
+              Tarjetas
+            </option>
+
+          </select>
+
+
+        </div>
+
+
+      </div>
+
+
+
+
+      {error && (
+
+        <div className="rounded-lg border border-red-500 bg-red-950 p-3 text-red-300">
+
+          {error}
+
+        </div>
+
+      )}
+
+
+
+
+
+
+      {showForm && (
+
+        <AccountForm
+          initialAccount={editingAccount}
+          onCancel={() => {
+
+            setEditingAccount(undefined);
+
+            setShowForm(false);
+
+          }}
+          onSubmit={async (account) => {
+
+
+            if (editingAccount) {
+
+              await updateAccount({
+                ...editingAccount,
+                ...account,
+              });
+
+
+            } else {
+
+              await createAccount(account);
+
+            }
+
+
+            setEditingAccount(undefined);
+
+            setShowForm(false);
+
+
+          }}
+        />
+
+      )}
+
+
+
+
+
+
+      <AccountList
+
+        accounts={filteredAccounts}
+
+        onEdit={(account) => {
+
+          setEditingAccount(account);
+
+          setShowForm(true);
+
+        }}
+
+        onDelete={deleteAccount}
+
+      />
+
+
     </div>
+
   );
+
 }

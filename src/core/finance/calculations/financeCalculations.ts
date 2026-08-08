@@ -28,7 +28,9 @@ export function calculateAccountBalance(
 
       if (transaction.type === "transfer") {
 
-        if (transaction.accountId === account.id) {
+        if (
+          transaction.accountId === account.id
+        ) {
           return balance - transaction.amount;
         }
 
@@ -42,12 +44,14 @@ export function calculateAccountBalance(
       }
 
 
-      if (transaction.accountId !== account.id) {
+      if (
+        transaction.accountId !== account.id
+      ) {
         return balance;
       }
 
 
-      switch(transaction.type) {
+      switch (transaction.type) {
 
         case "income":
           return balance + transaction.amount;
@@ -67,15 +71,29 @@ export function calculateAccountBalance(
 
 
 
+export function calculateCurrentAccountBalance(
+  account: Account,
+  transactions: Transaction[]
+): number {
+
+  return calculateAccountBalance(
+    account,
+    transactions
+  );
+
+}
+
+
+
 export function calculateLiquidity(
   accounts: Account[],
   transactions: Transaction[]
 ): number {
 
   return accounts.reduce(
-    (sum, account) =>
-      sum +
-      calculateAccountBalance(
+    (total, account) =>
+      total +
+      calculateCurrentAccountBalance(
         account,
         transactions
       ),
@@ -110,22 +128,21 @@ export function calculateLastTransactionDate(
   transactions: Transaction[]
 ): string | null {
 
-  if (transactions.length === 0) {
+  if (
+    transactions.length === 0
+  ) {
     return null;
   }
 
 
-  return (
-    transactions
-      .map(
-        transaction =>
-          transaction.date
-      )
-      .sort()
-      .at(-1)
-      ??
-      null
-  );
+  return transactions
+    .map(
+      transaction =>
+        transaction.date
+    )
+    .sort()
+    .at(-1)
+    ?? null;
 
 }
 
@@ -138,19 +155,29 @@ export function calculateNetWorth(
   liabilities: Liability[]
 ): number {
 
-  return (
+  const liquidity =
     calculateLiquidity(
       accounts,
       transactions
-    )
-    +
+    );
+
+
+  const assetsTotal =
     calculateTotalAssets(
       assets
-    )
-    -
+    );
+
+
+  const liabilitiesTotal =
     calculateTotalLiabilities(
       liabilities
-    )
+    );
+
+
+  return (
+    liquidity +
+    assetsTotal -
+    liabilitiesTotal
   );
 
 }
@@ -172,8 +199,8 @@ export function calculateMonthlyIncome(
         )
     )
     .reduce(
-      (sum, transaction) =>
-        sum + transaction.amount,
+      (total, transaction) =>
+        total + transaction.amount,
       0
     );
 
@@ -196,8 +223,8 @@ export function calculateMonthlyExpenses(
         )
     )
     .reduce(
-      (sum, transaction) =>
-        sum + transaction.amount,
+      (total, transaction) =>
+        total + transaction.amount,
       0
     );
 
@@ -206,9 +233,9 @@ export function calculateMonthlyExpenses(
 
 
 export function calculateMonthlySavings(
-  income:number,
-  expenses:number
-):number {
+  income: number,
+  expenses: number
+): number {
 
   return income - expenses;
 
@@ -217,13 +244,16 @@ export function calculateMonthlySavings(
 
 
 export function calculateSavingsRate(
-  income:number,
-  savings:number
-):number {
+  income: number,
+  savings: number
+): number {
 
-  if(income === 0){
+  if (
+    income <= 0
+  ) {
     return 0;
   }
+
 
   return savings / income;
 
@@ -233,11 +263,11 @@ export function calculateSavingsRate(
 
 export function calculateInitialNetWorth(
   accounts: Account[]
-):number {
+): number {
 
   return accounts.reduce(
-    (sum,account)=>
-      sum + account.initialBalance,
+    (total, account) =>
+      total + account.initialBalance,
     0
   );
 
@@ -294,7 +324,6 @@ export function buildFinanceSnapshot(
     );
 
 
-
   return {
 
     liquidityTotal,
@@ -302,7 +331,6 @@ export function buildFinanceSnapshot(
     totalAssets,
 
     totalLiabilities,
-
 
     netWorth:
       liquidityTotal +
@@ -330,7 +358,6 @@ export function buildFinanceSnapshot(
       ),
 
 
-
     accountCount:
       calculateAccountCount(
         accounts
@@ -347,7 +374,6 @@ export function buildFinanceSnapshot(
       calculateLastTransactionDate(
         transactions
       ),
-
 
 
     assetCount:
@@ -383,16 +409,15 @@ export function buildFinanceSnapshot(
 function isTransactionInMonth(
   transaction: Transaction,
   referenceDate: Date
-):boolean {
-
+): boolean {
 
   const [
     year,
     month
   ] =
-  transaction.date
-    .split("-")
-    .map(Number);
+    transaction.date
+      .split("-")
+      .map(Number);
 
 
   return (

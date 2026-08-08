@@ -2,17 +2,26 @@
 
 ## Resumen ejecutivo
 
-FinanceOS muestra una base sólida para una aplicación Local First de finanzas personales. La arquitectura general es comprensible y el proyecto ya incorpora piezas clave como React, TypeScript, Vite, Tailwind, Zustand, Dexie y React Router.
+FinanceOS muestra una base sólida para una aplicación Local First de finanzas personales. La arquitectura general es comprensible y el proyecto incorpora React, TypeScript, Vite, Tailwind, Zustand, Dexie y React Router.
 
-Sin embargo, el proyecto aún está en una etapa temprana y presenta una serie de riesgos técnicos que podrían crecer rápidamente si no se corrigen desde ahora. El mayor problema no es la ausencia de funcionalidad, sino la mezcla de capas, la duplicación de conceptos y la falta de una definición clara de la fuente de verdad del dominio financiero.
+Durante la consolidación realizada se han eliminado dos fuentes importantes de duplicidad arquitectónica:
+
+* `src/stores/financeStore.ts`
+* `src/modules/ledger/`
+
+El dominio de transacciones queda centralizado actualmente en `src/modules/transactions/`.
+
+El Dashboard también ha dejado de depender de valores hard-coded y actualmente deriva sus indicadores desde el core financiero y los stores de dominio. Las pruebas realizadas con cuentas, transacciones, activos y pasivos muestran resultados coherentes.
+
+El proyecto continúa teniendo áreas de mejora relacionadas principalmente con la organización de capas, persistencia, validación, pruebas automatizadas y evolución del modelo financiero.
 
 ## Estado general
 
-- Arquitectura: parcialmente madura
-- Escalabilidad: media
-- Mantenibilidad: media-baja
-- Consistencia del dominio: baja-media
-- Preparación para crecimiento: buena base, pero requiere consolidación
+* Arquitectura: parcialmente madura
+* Escalabilidad: media-alta
+* Mantenibilidad: media
+* Consistencia del dominio: media-alta
+* Preparación para crecimiento: buena base, requiere consolidación adicional
 
 ---
 
@@ -20,24 +29,29 @@ Sin embargo, el proyecto aún está en una etapa temprana y presenta una serie d
 
 ### Lo que funciona bien
 
-- Se ha empezado a organizar el proyecto por módulos.
-- Existe una separación clara entre UI, routing, estado y persistencia.
-- La aplicación usa una base local con Dexie, lo que encaja con el enfoque Local First.
-- El diseño visual empieza a tener una identidad consistente gracias al design system.
+* El proyecto está organizado por módulos funcionales.
+* Existe una separación clara entre UI, routing, estado y persistencia.
+* La aplicación utiliza Dexie como almacenamiento Local First.
+* Zustand se utiliza para el estado de los distintos dominios.
+* El core financiero centraliza los cálculos derivados.
+* El Dashboard consume datos reales procedentes del modelo financiero.
+* Se ha eliminado la duplicidad entre `modules/ledger` y `modules/transactions`.
+* Se ha eliminado el store financiero global legacy `stores/financeStore`.
 
 ### Problemas actuales
 
-| Severidad | Hallazgo | Impacto |
-| --- | --- | --- |
-| Crítico | Existen dos modelos conceptualmente similares para transacciones: modules/ledger y modules/transactions. Esto genera ambigüedad y riesgo de divergencia. | Confunde el dominio, dificulta mantenimiento y aumenta la probabilidad de errores. |
-| Importante | El proyecto mantiene una capa legacy en stores/financeStore y un Dashboard con valores hard-coded, mientras que los nuevos módulos ya se orientan a datos reales. | Rompe la consistencia de la arquitectura y compromete la idea de una única fuente de verdad. |
-| Importante | La arquitectura modular existe, pero aún no está completamente consolidada. Existen carpetas como models/, services/ y stores/ de alcance global que pueden solaparse con la organización modular. | Hace más difícil entender dónde vivirán las responsabilidades de negocio. |
+| Severidad   | Hallazgo                                                                                                      | Impacto                                                                 |
+| ----------- | ------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| Importante  | La arquitectura modular todavía convive con algunas carpetas globales como `models/`, `services/` y `utils/`. | Puede dificultar determinar dónde debe vivir una nueva responsabilidad. |
+| Recomendado | Algunas responsabilidades de infraestructura y dominio todavía podrían delimitarse mejor.                     | Puede aumentar el acoplamiento conforme crezca la aplicación.           |
 
 ### Recomendaciones
 
-- Consolidar un único módulo de dominio para transacciones y eliminar o integrar la duplicación de ledger.
-- Definir claramente qué debe vivir en cada capa: dominio, infraestructura, UI y estado.
-- Mantener una única fuente de verdad para los datos financieros y derivar métricas desde ella.
+* Mantener `modules/` como ubicación principal de las funcionalidades de dominio.
+* Mantener en `core/` únicamente lógica transversal y cálculos realmente compartidos.
+* Mantener las capas globales al mínimo.
+* Definir claramente qué pertenece al dominio, infraestructura, estado y UI.
+* Mantener una única fuente de verdad para los datos financieros.
 
 ---
 
@@ -45,48 +59,62 @@ Sin embargo, el proyecto aún está en una etapa temprana y presenta una serie d
 
 ### Observaciones
 
-La estructura actual es razonable, pero todavía presenta mezcla entre enfoques:
+La estructura actual está orientada principalmente a módulos:
 
-- src/modules/ contiene módulos funcionales.
-- src/stores/ y src/services/ contienen capas globales legacy.
-- src/components/ contiene UI compartida.
-- src/db/ contiene persistencia central.
+* `src/modules/` contiene los dominios funcionales.
+* `src/core/` contiene lógica financiera transversal.
+* `src/components/` contiene componentes UI compartidos.
+* `src/db/` contiene la persistencia central.
+* `src/stores/` ya no contiene el antiguo `financeStore`.
 
 ### Problemas actuales
 
-| Severidad | Hallazgo | Impacto |
-| --- | --- | --- |
-| Importante | La estructura global y la estructura modular conviven sin una frontera clara. | Aumenta la carga cognitiva del proyecto y dificulta la navegación del código. |
-| Recomendado | Hay carpetas como models/ que no parecen estar siendo usadas de forma consistente. | Genera ruido y riesgo de que se acumulen artefactos sin propósito. |
+| Severidad   | Hallazgo                                                                                                    | Impacto                                                 |
+| ----------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| Importante  | Todavía existen algunas carpetas globales cuya responsabilidad puede solaparse con la organización modular. | Aumenta la carga cognitiva del proyecto.                |
+| Recomendado | Existen carpetas como `models/` cuyo uso debe mantenerse bajo control.                                      | Puede generar artefactos sin una responsabilidad clara. |
 
 ### Recomendaciones
 
-- Definir una regla de arquitectura: o todo está modular, o todo está global. Lo ideal es que lo global sea mínimo y transversal.
-- Mantener solo utilidades compartidas verdaderamente reutilizables en las capas globales.
-- Documentar la estructura esperada para futuros desarrollos.
+* Mantener los módulos funcionales como primera opción para nuevas funcionalidades.
+* Reservar las carpetas globales para elementos realmente compartidos.
+* Eliminar progresivamente estructuras vacías o sin responsabilidad definida.
+* Documentar la convención arquitectónica.
 
 ---
 
 ## 3. Duplicidades y componentes repetidos
 
-### Hallazgos
+### Estado actual
 
-- Hay duplicidad conceptual en el modelo de transacciones entre ledger y transactions.
-- El patrón de servicio-store-hook se repite de forma similar en accounts y transactions, lo cual es positivo, pero debería estandarizarse.
-- Existen componentes de UI que funcionan como envoltorios de otros, lo que puede ser válido, pero puede producir redundancia si no se define un sistema visual claro.
+La duplicidad principal del dominio de transacciones ha sido resuelta.
+
+Anteriormente existían:
+
+* `modules/ledger`
+* `modules/transactions`
+
+Actualmente el dominio operativo de transacciones está centralizado en:
+
+`src/modules/transactions/`
+
+También se ha eliminado:
+
+`src/stores/financeStore.ts`
 
 ### Problemas actuales
 
-| Severidad | Hallazgo | Impacto |
-| --- | --- | --- |
-| Importante | La duplicación del dominio financiero aumenta el riesgo de inconsistencias. | Puede llevar a que una parte del sistema use un modelo distinto a otra. |
-| Recomendado | Hay varios componentes de UI con responsabilidades muy parecidas. | Puede reducir claridad y aumentar la cantidad de superficie de mantenimiento. |
+| Severidad   | Hallazgo                                                                                          | Impacto                                                          |
+| ----------- | ------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| Recomendado | El patrón servicio → store → hook se repite en distintos módulos y debe mantenerse estandarizado. | Evita divergencias entre módulos conforme aumente el proyecto.   |
+| Recomendado | Algunos componentes UI tienen responsabilidades próximas.                                         | Puede aumentar la superficie de mantenimiento si no se controla. |
 
 ### Recomendaciones
 
-- Centralizar modelos, tipos y servicios en un único módulo de dominio.
-- Establecer una política de diseño de UI: componentes atómicos, compuestos y módulos.
-- Evitar crear nuevos wrappers si no aportan valor real.
+* Mantener un único modelo por entidad.
+* Mantener un patrón consistente entre módulos.
+* Evitar crear nuevos wrappers sin una responsabilidad clara.
+* Reutilizar componentes UI compartidos cuando exista una necesidad real.
 
 ---
 
@@ -94,42 +122,54 @@ La estructura actual es razonable, pero todavía presenta mezcla entre enfoques:
 
 ### Observaciones
 
-Los servicios actuales siguen un patrón simple y comprensible. Son una buena base para la capa de infraestructura.
+Los servicios siguen un patrón sencillo y comprensible.
+
+Los módulos actuales utilizan servicios para acceder a Dexie y los stores mantienen el estado en memoria.
 
 ### Problemas actuales
 
-| Severidad | Hallazgo | Impacto |
-| --- | --- | --- |
-| Importante | Los servicios operan directamente sobre Dexie, pero aún no hay una abstracción más robusta de acceso a datos. | Puede volver difícil introducir cambios en el almacenamiento o migraciones. |
-| Recomendado | Falta un patrón claro para validaciones, transformaciones y manejo de errores a nivel de servicio. | El código podría volverse inconsistente en el futuro. |
+| Severidad   | Hallazgo                                                       | Impacto                                                                             |
+| ----------- | -------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Importante  | Los servicios acceden directamente a Dexie.                    | Un cambio futuro de almacenamiento podría requerir modificaciones en varias partes. |
+| Recomendado | Las validaciones no están todavía completamente centralizadas. | Puede provocar comportamientos diferentes entre casos de uso.                       |
+| Recomendado | El tratamiento de errores podría estandarizarse.               | Puede producir mensajes y comportamientos inconsistentes.                           |
 
 ### Recomendaciones
 
-- Definir un contrato de servicio estable y reutilizable.
-- Centralizar validaciones y mapeos en una capa de dominio o infraestructura.
-- Preparar el sistema para futuras migraciones de almacenamiento sin tocar el resto de la app.
+* Mantener contratos claros de servicio.
+* Centralizar validaciones de dominio cuando sea necesario.
+* Mantener los servicios independientes de la UI.
+* Preparar progresivamente una abstracción de persistencia si el proyecto lo requiere.
 
 ---
 
-## 5. Stores y estado global
+## 5. Stores y estado
 
 ### Observaciones
 
-Zustand se está usando de forma correcta para manejar estado local de módulos. Es una buena elección para una app Local First.
+Zustand se utiliza actualmente mediante stores específicos por dominio:
+
+* Accounts
+* Transactions
+* Assets
+* Liabilities
+* Recurring
+
+El antiguo `financeStore` global ha sido eliminado.
 
 ### Problemas actuales
 
-| Severidad | Hallazgo | Impacto |
-| --- | --- | --- |
-| Importante | El estado global está todavía mezclado con datos de UI y datos de dominio. | Puede generar stores demasiado amplios o difíciles de razonar. |
-| Importante | Existen stores legacy y módulos nuevos que no comparten una misma lógica de derivación. | Dificulta la escalabilidad y la previsibilidad. |
-| Recomendado | No se observan selectores ni lógica derivada claramente separada. | Aumenta la probabilidad de duplicación lógica en componentes. |
+| Severidad   | Hallazgo                                                                                         | Impacto                                 |
+| ----------- | ------------------------------------------------------------------------------------------------ | --------------------------------------- |
+| Importante  | Todavía debe mantenerse una separación estricta entre estado persistente y estado derivado.      | Evita duplicar información financiera.  |
+| Recomendado | Algunos cálculos derivados pueden requerir selectores específicos conforme crezca la aplicación. | Reduce renders y duplicación de lógica. |
 
 ### Recomendaciones
 
-- Mantener stores dedicados por dominio y evitar stores con múltiples responsabilidades.
-- Introducir selectores para derivar métricas y vistas a partir del estado base.
-- Evitar que los componentes dependan de datos ya calculados o hard-coded cuando se pueden derivar del store.
+* Mantener un store por dominio.
+* No almacenar como estado valores que puedan calcularse de forma fiable.
+* Utilizar el core financiero para métricas derivadas.
+* Introducir selectores cuando el volumen de datos lo justifique.
 
 ---
 
@@ -137,19 +177,23 @@ Zustand se está usando de forma correcta para manejar estado local de módulos.
 
 ### Observaciones
 
-Los hooks creados para cuentas y transacciones son claros y siguen un patrón útil.
+Los hooks de dominio siguen un patrón claro.
+
+El hook financiero `useFinanceSnapshot` obtiene el snapshot mediante `financeService`, mientras que los stores de dominio mantienen sus respectivos datos.
 
 ### Problemas actuales
 
-| Severidad | Hallazgo | Impacto |
-| --- | --- | --- |
-| Recomendado | Los hooks no parecen encapsular aún lógica de transformación o validación compleja. | Podrían volverse demasiado finos y poco reutilizables. |
-| Recomendado | Falta un patrón claro para evitar re-cargar datos innecesariamente. | Podría afectar rendimiento en el futuro si la app crece. |
+| Severidad   | Hallazgo                                                                    | Impacto                                                            |
+| ----------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| Recomendado | Algunos hooks todavía realizan principalmente funciones de acceso a estado. | Pueden existir oportunidades para centralizar casos de uso.        |
+| Recomendado | Debe controlarse la frecuencia de cargas y refrescos.                       | Puede producir trabajo innecesario conforme aumente la aplicación. |
 
 ### Recomendaciones
 
-- Mantener los hooks orientados a casos de uso y no a detalles de implementación.
-- Añadir lógica reutilizable de carga, sincronización y manejo de errores.
+* Mantener los hooks orientados a casos de uso.
+* Evitar que los componentes conozcan detalles de persistencia.
+* Utilizar correctamente dependencias de `useEffect`, `useMemo` y `useCallback`.
+* Evitar cargas redundantes.
 
 ---
 
@@ -157,20 +201,23 @@ Los hooks creados para cuentas y transacciones son claros y siguen un patrón ú
 
 ### Observaciones
 
-El proyecto usa TypeScript, lo que es una ventaja. El tipado de los módulos nuevos es bastante claro.
+TypeScript es una parte fundamental de la arquitectura.
+
+Los módulos principales disponen de tipos específicos para sus entidades.
 
 ### Problemas actuales
 
-| Severidad | Hallazgo | Impacto |
-| --- | --- | --- |
-| Importante | La existencia de tipos duplicados o ligeramente diferentes entre módulos es una fuente de fragilidad. | Puede introducir errores sutiles difíciles de detectar. |
-| Recomendado | No se observa una estrategia de tipos compartidos para entidades, DTOs y vistas. | Hace más difícil escalar con seguridad. |
+| Severidad   | Hallazgo                                                                                                                   | Impacto                                        |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| Importante  | El proyecto ha sufrido cambios recientes en los contratos de entidades y debe mantenerse una única definición por dominio. | Evita errores de compatibilidad entre módulos. |
+| Recomendado | La separación entre entidades persistentes, modelos de vista y datos derivados puede seguir mejorándose.                   | Facilita la evolución del sistema.             |
 
 ### Recomendaciones
 
-- Definir un único contrato de entidad por dominio.
-- Usar tipos compartidos para datos de persistencia y UI.
-- Añadir reglas estrictas de compilación y revisar los errores de TypeScript de forma continua.
+* Mantener un único contrato de entidad por dominio.
+* Evitar duplicar interfaces equivalentes.
+* Utilizar tipos específicos para modelos de vista cuando sea necesario.
+* Mantener TypeScript en modo estricto.
 
 ---
 
@@ -178,21 +225,24 @@ El proyecto usa TypeScript, lo que es una ventaja. El tipado de los módulos nue
 
 ### Observaciones
 
-Dexie es una buena elección para este proyecto Local First y ya está integrado con una base local.
+Dexie es una buena elección para el enfoque Local First de FinanceOS.
+
+La persistencia de cuentas, transacciones, activos, pasivos y recurrencias está integrada en la aplicación.
 
 ### Problemas actuales
 
-| Severidad | Hallazgo | Impacto |
-| --- | --- | --- |
-| Importante | La base de datos no parece tener todavía una estrategia de migraciones ni de evolución de esquemas bien definida. | Puede complicar futuras iteraciones de datos. |
-| Importante | La tabla de transacciones no está todavía modelada con relaciones o índices de consulta más ricos. | Limitara el rendimiento y la expresividad de consultas futuras. |
-| Recomendado | Falta una política clara para normalización y consistencia de datos. | Puede introducir datos redundantes o inconsistentes. |
+| Severidad   | Hallazgo                                                                                    | Impacto                                                 |
+| ----------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| Importante  | La evolución futura del esquema requiere una estrategia de migraciones claramente definida. | Cambios estructurales podrían afectar datos existentes. |
+| Importante  | Las consultas y los índices deben evolucionar junto con el volumen de datos.                | Puede afectar rendimiento con muchos movimientos.       |
+| Recomendado | Debe mantenerse una política clara de consistencia entre entidades relacionadas.            | Reduce riesgo de datos inconsistentes.                  |
 
 ### Recomendaciones
 
-- Definir un esquema estable y versionado.
-- Preparar un plan de migraciones y compatibilidad.
-- Pensar en índices y consultas futuras desde el inicio.
+* Versionar el esquema de Dexie.
+* Definir migraciones antes de introducir cambios incompatibles.
+* Añadir índices según necesidades reales de consulta.
+* Mantener las relaciones entre entidades claramente definidas.
 
 ---
 
@@ -200,160 +250,289 @@ Dexie es una buena elección para este proyecto Local First y ya está integrado
 
 ### Observaciones
 
-Zustand es una buena elección para una app local, ligera y directa.
+Zustand encaja correctamente con una aplicación local y reactiva.
+
+La arquitectura actual utiliza stores independientes por dominio y el Dashboard obtiene sus métricas mediante el core financiero.
 
 ### Problemas actuales
 
-| Severidad | Hallazgo | Impacto |
-| --- | --- | --- |
-| Importante | El store actual de saldo es muy simplista y no refleja el modelo financiero real. | Puede desalinear la UI con el estado real del sistema. |
-| Recomendado | Falta una política para separar estado de UI y estado de negocio. | Puede dificultar la evolución del sistema. |
+| Severidad   | Hallazgo                                                                                                     | Impacto                                                                     |
+| ----------- | ------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------- |
+| Recomendado | Los selectores derivados todavía pueden evolucionar.                                                         | Puede mejorar rendimiento y claridad conforme aumente el volumen de estado. |
+| Recomendado | Debe evitarse introducir datos calculados directamente dentro de stores cuando puedan derivarse del dominio. | Previene inconsistencias.                                                   |
 
 ### Recomendaciones
 
-- Usar stores por dominio y no por pantalla.
-- Mantener el estado derivado y transitorio fuera del modelo principal.
-- Asegurar que los valores mostrados en pantalla se puedan recalcular desde la fuente de verdad.
+* Mantener stores centrados en estado de dominio.
+* Derivar patrimonio, liquidez, ahorro y ratios desde el core financiero.
+* Evitar duplicar cálculos entre stores y componentes.
+* Introducir selectores específicos cuando sea necesario.
 
 ---
 
-## 10. Escalabilidad
+## 10. Core financiero
+
+### Estado actual
+
+El core financiero se ha convertido en una pieza central de FinanceOS.
+
+`buildFinanceSnapshot()` recibe:
+
+* cuentas
+* transacciones
+* activos
+* pasivos
+* fecha de referencia
+
+y calcula:
+
+* liquidez
+* activos
+* pasivos
+* patrimonio neto
+* ingresos
+* gastos
+* ahorro
+* tasa de ahorro
+* número de cuentas
+* número de movimientos
+* último movimiento
+* número de activos
+* número de pasivos
+* pago mensual de deuda
+* ratio de deuda
+
+### Validación realizada
+
+Los datos de prueba actuales han demostrado que el Dashboard refleja correctamente los datos introducidos.
+
+Ejemplo validado:
+
+* Liquidez: `2.388 €`
+* Activos: `15.000 €`
+* Pasivos: `5.000 €`
+* Patrimonio neto: `12.388 €`
+* Ingresos: `2.000 €`
+* Gastos: `612 €`
+* Ahorro: `1.388 €`
+
+La fórmula utilizada:
+
+`Patrimonio Neto = Liquidez + Activos - Pasivos`
+
+produce:
+
+`2.388 + 15.000 - 5.000 = 12.388 €`
+
+### Recomendaciones
+
+* Mantener `buildFinanceSnapshot()` como punto central para métricas financieras globales.
+* Evitar recalcular estas métricas directamente en componentes del Dashboard.
+* Añadir pruebas unitarias al core financiero.
+
+---
+
+## 11. Escalabilidad
 
 ### Observaciones
 
-El proyecto tiene una base suficientemente modular como para crecer, pero aún se encuentra en una etapa inicial.
+La arquitectura actual proporciona una base suficientemente modular para seguir creciendo.
+
+La eliminación de las duplicidades principales ha reducido significativamente el riesgo arquitectónico inicial.
 
 ### Problemas futuros
 
-| Severidad | Hallazgo | Impacto |
-| --- | --- | --- |
-| Importante | Si la duplicación de dominio y la mezcla de capas continúan, el sistema crecerá de forma frágil. | Hacer que el proyecto sea difícil de extender con nuevas entidades y vistas. |
-| Recomendado | La falta de una estrategia clara de datos derivados puede volver complejas funciones como patrimonio, liquidez y presupuestos. | Podría generar lógica duplicada y errores en cálculos. |
+| Severidad   | Hallazgo                                                                                                               | Impacto                                                     |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| Importante  | La aplicación seguirá necesitando una estrategia clara para datos derivados a medida que aumenten las funcionalidades. | Evita duplicar lógica financiera.                           |
+| Recomendado | La cantidad de módulos puede crecer rápidamente.                                                                       | Sin convenciones claras puede aparecer nueva deuda técnica. |
 
 ### Recomendaciones
 
-- Definir una arquitectura de dominio estable antes de introducir más módulos complejos.
-- Preparar un sistema de cálculos derivados centralizado.
-- Evitar agregar nuevas pantallas con lógica ad-hoc sin pasar por el mismo patrón de servicios/store/hooks. |
+* Mantener estable el modelo de dominio.
+* Centralizar cálculos financieros.
+* Evitar lógica ad-hoc en páginas.
+* Introducir nuevas funcionalidades siguiendo el patrón modular existente.
 
 ---
 
-## 11. Mantenibilidad
+## 12. Mantenibilidad
 
 ### Problemas actuales
 
-| Severidad | Hallazgo | Impacto |
-| --- | --- | --- |
-| Importante | La ausencia de una convención estricta entre módulos puede generar deuda técnica rápida. | Cada nuevo feature puede introducir inconsistencias sin que se note al principio. |
-| Recomendado | Falta una estrategia para pruebas, revisión y calidad continua. | El proyecto dependerá fuertemente de inspección manual. |
+| Severidad   | Hallazgo                                                                               | Impacto                                                    |
+| ----------- | -------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| Importante  | Todavía no existe una estrategia amplia de pruebas automatizadas.                      | La evolución dependerá en gran medida de pruebas manuales. |
+| Recomendado | Las convenciones arquitectónicas deben mantenerse durante el crecimiento del proyecto. | Evita volver a introducir duplicidades.                    |
 
 ### Recomendaciones
 
-- Establecer convenciones de carpetas, nombres y flujo de datos.
-- Añadir linting y pruebas automatizadas.
-- Documentar los módulos y las decisiones de arquitectura.
+* Añadir pruebas unitarias al core financiero.
+* Añadir pruebas para servicios críticos.
+* Mantener compilación TypeScript limpia.
+* Documentar decisiones arquitectónicas importantes.
+* Mantener una política de commits consistente.
 
 ---
 
-## 12. Rendimiento
+## 13. Rendimiento
 
 ### Observaciones
 
-La app actual es pequeña, por lo que el rendimiento es aceptable.
+La aplicación actual tiene un volumen de datos pequeño y el rendimiento es adecuado.
 
 ### Problemas actuales
 
-| Severidad | Hallazgo | Impacto |
-| --- | --- | --- |
-| Recomendado | No se observan estrategias de memoización o optimización de consultas de datos. | Podría impactar cuando aumente el volumen de transacciones. |
-| Recomendado | El estado está cargado en memoria y las vistas podrían volver a calcular métricas en cada render. | Potencial costo incremental en interfaces más complejas. |
+| Severidad   | Hallazgo                                                                 | Impacto                                                       |
+| ----------- | ------------------------------------------------------------------------ | ------------------------------------------------------------- |
+| Recomendado | Algunas métricas pueden recalcularse cuando cambie el estado financiero. | Puede aumentar el coste de renderizado con grandes volúmenes. |
+| Recomendado | Las consultas Dexie pueden requerir optimización futura.                 | Importante si el historial crece considerablemente.           |
 
 ### Recomendaciones
 
-- Introducir selectores derivados y memoizados.
-- Limitar renders innecesarios con estructuras de estado bien separadas.
-- Preparar consultas de datos más eficientes para volúmenes altos.
+* Utilizar memoización cuando aporte valor real.
+* Utilizar selectores de Zustand.
+* Añadir índices Dexie según las consultas reales.
+* No optimizar prematuramente antes de disponer de un problema medido.
 
 ---
 
-## 13. Seguridad
+## 14. Seguridad y resiliencia
 
 ### Observaciones
 
-El proyecto es local y no está orientado todavía a un backend central. Por tanto, el riesgo de seguridad tradicional es menor que en una app multiusuario.
+FinanceOS funciona como aplicación Local First y almacena la información localmente.
 
 ### Problemas actuales
 
-| Severidad | Hallazgo | Impacto |
-| --- | --- | --- |
-| Recomendado | No hay evidencia de estrategia para respaldos, exportación o protección de datos locales. | El usuario podría perder información si el navegador o el storage se corrompen. |
-| Opcional | No se contempla aún cifrado o protección adicional para datos sensibles. | Relevante solo si se introducen datos financieros delicados más complejos. |
+| Severidad   | Hallazgo                                                                     | Impacto                                                                     |
+| ----------- | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Recomendado | La estrategia de backup e importación/exportación debe seguir evolucionando. | La pérdida del almacenamiento local podría provocar pérdida de información. |
+| Opcional    | No existe todavía una estrategia avanzada de cifrado local.                  | Puede ser relevante si aumenta la sensibilidad de los datos almacenados.    |
 
 ### Recomendaciones
 
-- Definir un plan de exportación/importación de datos.
-- Considerar respaldo local y recuperación ante fallos del navegador.
-- Revisar la evolución del producto si se añade autenticación o sincronización en el futuro.
+* Mantener el módulo de backup.
+* Implementar exportación/importación robusta.
+* Probar recuperación de datos.
+* Considerar cifrado si el modelo de seguridad del producto lo requiere.
 
 ---
 
-## 14. Convenciones y calidad
+## 15. Convenciones y calidad
 
 ### Observaciones
 
-El proyecto empieza a mostrar una guía de arquitectura y un diseño coherente, pero aún no se ha consolidado una cultura de calidad fuerte.
+La arquitectura empieza a estar consolidada, pero todavía debe establecerse una estrategia completa de calidad automatizada.
 
 ### Problemas actuales
 
-| Severidad | Hallazgo | Impacto |
-| --- | --- | --- |
-| Importante | No hay evidencia de una política de commits, revisión o calidad continua muy definida. | Puede reducir consistencia y dificultar trabajo en equipo. |
-| Recomendado | No se observa un pipeline claro de linting, tests y validación automatizada. | Aumenta el riesgo de regresiones. |
+| Severidad   | Hallazgo                                                 | Impacto                                              |
+| ----------- | -------------------------------------------------------- | ---------------------------------------------------- |
+| Importante  | La cobertura de tests automatizados todavía es limitada. | Aumenta el riesgo de regresiones.                    |
+| Recomendado | El proceso de validación continua puede mejorar.         | Facilita detectar errores antes de integrar cambios. |
 
 ### Recomendaciones
 
-- Adoptar Conventional Commits de forma estricta.
-- Añadir linting y tests para módulos clave.
-- Requerir que cada cambio pase build y tests antes de integrarse.
+* Mantener `npm run build` como validación obligatoria.
+* Añadir tests unitarios.
+* Añadir linting.
+* Mantener commits descriptivos.
+* Automatizar progresivamente las comprobaciones mediante CI.
 
 ---
 
-## Hallazgos prioritarios
+# Hallazgos prioritarios
 
-### Críticos
+## Críticos
 
-1. Duplicación entre ledger y transactions.
-2. Falta de una única fuente de verdad financiera bien definida.
+Actualmente no queda ningún hallazgo crítico de los identificados inicialmente.
 
-### Importantes
+Las dos duplicidades críticas principales han sido resueltas:
 
-1. Mezcla entre arquitectura modular y arquitectura legacy.
-2. Stores y UI aún no están completamente alineados con el modelo financiero real.
-3. Debilidad de estrategia de persistencia y migraciones en Dexie.
+1. `modules/ledger` eliminado.
+2. `stores/financeStore` eliminado.
 
-### Recomendados
+Además, el Dashboard ya utiliza datos reales derivados del core financiero.
 
-1. Mejorar la claridad del diseño de componentes y la reutilización.
-2. Añadir selectores, validaciones y tests.
-3. Definir convenciones de calidad y revisión.
+## Importantes
 
-### Opcionales
+1. Consolidar completamente las fronteras entre `core`, `modules` y capas globales.
+2. Fortalecer la estrategia de persistencia y migraciones de Dexie.
+3. Mantener una única fuente de verdad para los datos financieros.
+4. Añadir pruebas automatizadas al core y servicios críticos.
+5. Mantener separados estado base y datos derivados.
 
-1. Mejorar estrategia de exportación, respaldo y resiliencia local.
-2. Añadir mecanismos de rendimiento más avanzados a medida que crezca el volumen de datos.
+## Recomendados
+
+1. Mejorar selectores de Zustand.
+2. Estandarizar validaciones y manejo de errores.
+3. Mejorar la reutilización de componentes UI.
+4. Optimizar consultas solamente cuando el volumen lo requiera.
+5. Documentar las convenciones arquitectónicas.
+
+## Opcionales
+
+1. Mejorar exportación e importación.
+2. Mejorar mecanismos de backup y recuperación.
+3. Considerar protección adicional de datos locales en fases posteriores.
 
 ---
 
-## Deuda técnica acumulada
+# Deuda técnica acumulada
 
-La deuda técnica actual no es crítica, pero sí real. Se concentra en tres áreas principales:
+La deuda técnica actual es moderada y está principalmente relacionada con:
 
-- Duplicación de dominio financiero.
-- Mezcla de capas y legado.
-- Falta de robustez en la estrategia de persistencia y datos derivados.
+* delimitación de capas;
+* estrategia de persistencia;
+* ausencia de una cobertura amplia de tests;
+* evolución de datos derivados;
+* convenciones arquitectónicas todavía en consolidación.
 
-Si estas áreas no se corrigen a tiempo, la aplicación puede crecer de forma más compleja de lo necesario y convertirse en difícil de mantener.
+La deuda inicial relacionada con la duplicación de transacciones y el store financiero global ha sido eliminada.
 
-## Conclusión
+El objetivo a partir de ahora debe ser **evitar volver a introducir duplicidades** mientras se incorporan nuevas funcionalidades.
 
-FinanceOS tiene una base prometedora. La dirección técnica es correcta y el proyecto ya ha avanzado mucho, pero necesita una consolidación de dominio y arquitectura para ser escalable y mantenible a largo plazo. La prioridad debe ser unificar el modelo financiero, reducir duplicidades y establecer un patrón claro para estado, servicios y persistencia.
+---
+
+# Estado de consolidación
+
+| Área                              | Estado                     |
+| --------------------------------- | -------------------------- |
+| Módulo de transacciones duplicado | ✅ Resuelto                 |
+| `financeStore` legacy             | ✅ Eliminado                |
+| Dashboard hard-coded              | ✅ Resuelto                 |
+| Core financiero                   | ✅ Operativo                |
+| Cuentas                           | ✅ Operativo                |
+| Transacciones                     | ✅ Operativo                |
+| Activos                           | ✅ Operativo                |
+| Pasivos                           | ✅ Operativo                |
+| Recurrencias                      | ✅ Operativo                |
+| Patrimonio neto                   | ✅ Validado                 |
+| Liquidez                          | ✅ Validada                 |
+| Flujo de caja                     | ✅ Validado                 |
+| Salud financiera                  | ✅ Operativa                |
+| Migraciones Dexie                 | ⚠️ Pendiente de consolidar |
+| Tests automatizados               | ⚠️ Pendiente               |
+| CI / calidad automatizada         | ⚠️ Pendiente               |
+
+---
+
+# Conclusión
+
+FinanceOS ha superado una primera fase importante de consolidación arquitectónica.
+
+Se han eliminado las principales duplicidades identificadas inicialmente y el sistema financiero central ya está conectado con los módulos reales de cuentas, transacciones, activos y pasivos.
+
+El Dashboard ha sido validado con datos reales y actualmente refleja correctamente las operaciones introducidas.
+
+La prioridad deja de ser corregir la arquitectura básica y pasa a ser **fortalecerla**:
+
+1. mantener una única fuente de verdad;
+2. proteger el core financiero con tests;
+3. consolidar Dexie y sus migraciones;
+4. mantener las fronteras entre módulos;
+5. evitar nuevas duplicidades;
+6. automatizar progresivamente la calidad del proyecto.
+
+La arquitectura actual constituye una base adecuada para continuar desarrollando FinanceOS sin necesidad de una nueva reestructuración global.

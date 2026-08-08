@@ -2,33 +2,21 @@ import type { Liability } from "../types/liability";
 
 
 /**
- * Calcula el total actual de pasivos
+ * Calcula el total actual de pasivos incluidos
+ * en patrimonio neto
  */
 export function calculateTotalLiabilities(
   liabilities: Liability[]
 ): number {
 
-  return liabilities.reduce(
-    (total, liability) =>
-      total + liability.currentValue,
-    0
-  );
-
-}
-
-
-/**
- * Calcula solo los pasivos incluidos en patrimonio neto
- */
-export function calculateIncludedLiabilities(
-  liabilities: Liability[]
-): number {
-
   return liabilities
+
     .filter(
       (liability) =>
-        liability.isIncludedInNetWorth
+        liability.isIncludedInNetWorth &&
+        liability.isActive
     )
+
     .reduce(
       (total, liability) =>
         total + liability.currentValue,
@@ -39,7 +27,30 @@ export function calculateIncludedLiabilities(
 
 
 /**
- * Número de pasivos registrados
+ * Calcula solo pasivos incluidos en patrimonio neto
+ */
+export function calculateIncludedLiabilities(
+  liabilities: Liability[]
+): number {
+
+  return liabilities
+
+    .filter(
+      (liability) =>
+        liability.isIncludedInNetWorth
+    )
+
+    .reduce(
+      (total, liability) =>
+        total + liability.currentValue,
+      0
+    );
+
+}
+
+
+/**
+ * Número total de pasivos registrados
  */
 export function calculateLiabilityCount(
   liabilities: Liability[]
@@ -67,8 +78,7 @@ export function calculateInitialLiabilities(
 
 
 /**
- * Diferencia entre deuda inicial y actual
- * (capital amortizado)
+ * Capital amortizado
  */
 export function calculatePaidLiabilities(
   liabilities: Liability[]
@@ -77,8 +87,10 @@ export function calculatePaidLiabilities(
   return liabilities.reduce(
     (total, liability) =>
       total +
-      (liability.initialValue -
-        liability.currentValue),
+      (
+        liability.initialValue -
+        liability.currentValue
+      ),
     0
   );
 
@@ -86,7 +98,7 @@ export function calculatePaidLiabilities(
 
 
 /**
- * Calcula cuota mensual total
+ * Cuota mensual total
  */
 export function calculateMonthlyDebtPayment(
   liabilities: Liability[]
@@ -103,17 +115,20 @@ export function calculateMonthlyDebtPayment(
 
 
 /**
- * Busca deuda hipotecaria
+ * Deuda hipotecaria actual
  */
 export function calculateMortgageDebt(
   liabilities: Liability[]
 ): number {
 
   return liabilities
+
     .filter(
       (liability) =>
-        liability.type === "mortgage"
+        liability.type === "mortgage" &&
+        liability.isActive
     )
+
     .reduce(
       (total, liability) =>
         total + liability.currentValue,
@@ -124,7 +139,7 @@ export function calculateMortgageDebt(
 
 
 /**
- * Patrimonio negativo generado por deuda
+ * Ratio deuda / activos
  */
 export function calculateDebtRatio(
   liabilities: Liability[],
@@ -132,12 +147,16 @@ export function calculateDebtRatio(
 ): number {
 
   if (assetsValue === 0) {
+
     return 0;
+
   }
 
 
   return (
-    calculateTotalLiabilities(liabilities) /
+    calculateTotalLiabilities(
+      liabilities
+    ) /
     assetsValue
   );
 

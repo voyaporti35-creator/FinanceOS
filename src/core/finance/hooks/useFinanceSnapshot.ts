@@ -1,100 +1,68 @@
-import { useEffect, useMemo } from "react";
+import { useCallback, useEffect, useState } from "react";
 
-import { useFinanceStore } from "../../../stores/financeStore";
+import { financeService } from "../services/financeService";
 
-import { useAssetStore } from "../../../modules/assets/store/assetStore";
-
-import { useLiabilityStore } from "../../../modules/liabilities/store/liabilityStore";
-
-import { buildFinanceSnapshot } from "../calculations/financeCalculations";
-
-
+import type { FinanceSnapshot } from "../types";
 
 export function useFinanceSnapshot() {
 
-  const {
-    accounts,
-    transactions,
-    loadAccounts,
-    loadTransactions,
-    isLoading: financeLoading,
-  } = useFinanceStore();
+  const [snapshot, setSnapshot] =
+    useState({} as FinanceSnapshot);
 
+  const [isLoading, setIsLoading] =
+    useState(true);
 
+  const [error, setError] =
+    useState<string | null>(null);
 
-  const {
-    assets,
-    loadAssets,
-    isLoading: assetsLoading,
-  } = useAssetStore();
+  const refresh = useCallback(async () => {
 
+    setIsLoading(true);
 
+    setError(null);
 
-  const {
-    liabilities,
-    loadLiabilities,
-    isLoading: liabilitiesLoading,
-  } = useLiabilityStore();
+    try {
 
+      const data =
+        await financeService.getSnapshot();
 
+      setSnapshot(data);
+
+    } catch (err) {
+
+      setError(
+
+        err instanceof Error
+
+          ? err.message
+
+          : "No se pudo cargar el resumen financiero"
+
+      );
+
+    } finally {
+
+      setIsLoading(false);
+
+    }
+
+  }, []);
 
   useEffect(() => {
 
-    void loadAccounts();
+    void refresh();
 
-    void loadTransactions();
-
-    void loadAssets();
-
-    void loadLiabilities();
-
-  }, [
-    loadAccounts,
-    loadTransactions,
-    loadAssets,
-    loadLiabilities,
-  ]);
-
-
-
-  const snapshot = useMemo(
-
-    () =>
-      buildFinanceSnapshot(
-        accounts,
-        transactions,
-        new Date(),
-        assets,
-        liabilities
-      ),
-
-    [
-      accounts,
-      transactions,
-      assets,
-      liabilities,
-    ]
-
-  );
-
-
+  }, [refresh]);
 
   return {
 
     snapshot,
 
-    accounts,
+    isLoading,
 
-    transactions,
+    error,
 
-    assets,
-
-    liabilities,
-
-    isLoading:
-      financeLoading ||
-      assetsLoading ||
-      liabilitiesLoading,
+    refresh,
 
   };
 

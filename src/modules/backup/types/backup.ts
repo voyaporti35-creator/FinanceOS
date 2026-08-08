@@ -1,22 +1,49 @@
 import type { Account } from "../../accounts/types/account";
+import type { Asset } from "../../assets/types/asset";
 import type { Category } from "../../categories/types/category";
+import type { Liability } from "../../liabilities/types/liability";
 import type { Transaction } from "../../transactions/types/transaction";
 
-export interface BackupTransactionRecord extends Omit<Transaction, "createdAt"> {
+
+export interface BackupTransactionRecord
+  extends Omit<Transaction, "createdAt"> {
+
   createdAt: string;
+
 }
+
 
 export interface BackupData {
+
   version: string;
+
   createdAt: string;
+
   accounts: Account[];
+
   transactions: BackupTransactionRecord[];
+
   categories: Category[];
+
+  assets: Asset[];
+
+  liabilities: Liability[];
+
   config: Record<string, unknown>;
+
 }
 
+
 export interface BackupImportResult {
+
   accountsCount: number;
+
   transactionsCount: number;
+
   categoriesCount: number;
+
+  assetsCount: number;
+
+  liabilitiesCount: number;
+
 }

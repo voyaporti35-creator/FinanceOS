@@ -1,0 +1,23 @@
+export interface MortgageDetails {
+  lender: string;
+
+  originalPrincipal: number;
+
+  outstandingPrincipal: number;
+
+  monthlyPayment: number;
+
+  interestRate: number;
+
+  euriborSpread?: number;
+
+  currentEuribor?: number;
+
+  startDate: number;
+
+  maturityDate: number;
+
+  nextReviewDate?: number;
+
+  reviewFrequencyMonths?: number;
+}

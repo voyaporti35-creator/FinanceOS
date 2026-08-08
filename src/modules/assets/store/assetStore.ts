@@ -3,121 +3,249 @@ import { assetService } from "../services/assetService";
 import type { Asset } from "../types/asset";
 
 interface AssetStoreState {
+
   assets: Asset[];
+
   isLoading: boolean;
+
   error: string | null;
 
   loadAssets: () => Promise<void>;
 
   createAsset: (
-    asset: Omit<Asset, "id" | "createdAt" | "updatedAt">
+    asset: Omit<
+      Asset,
+      "id" | "createdAt" | "updatedAt"
+    >
   ) => Promise<void>;
 
-  updateAsset: (asset: Asset) => Promise<void>;
+  updateAsset: (
+    asset: Asset
+  ) => Promise<void>;
 
-  deleteAsset: (id: string) => Promise<void>;
+  deleteAsset: (
+    id: string
+  ) => Promise<void>;
 
   clearAssets: () => Promise<void>;
+
+  clearError: () => void;
+
 }
 
-export const useAssetStore = create<AssetStoreState>((set) => ({
-  assets: [],
+export const useAssetStore =
+  create<AssetStoreState>((set) => ({
 
-  isLoading: false,
+    assets: [],
 
-  error: null,
+    isLoading: false,
 
-  loadAssets: async () => {
-    set({
-      isLoading: true,
-      error: null,
-    });
+    error: null,
 
-    try {
-      const assets = await assetService.getAll();
+    clearError: () =>
+      set({
+        error: null,
+      }),
+
+    loadAssets: async () => {
 
       set({
-        assets,
-        isLoading: false,
+
+        isLoading: true,
+
+        error: null,
+
       });
-    } catch (error) {
-      set({
-        error:
-          error instanceof Error
-            ? error.message
-            : "No se pudieron cargar los activos.",
-        isLoading: false,
-      });
-    }
-  },
 
-  createAsset: async (asset) => {
-    try {
-      const created = await assetService.create(asset);
+      try {
 
-      set((state) => ({
-        assets: [created, ...state.assets],
-      }));
-    } catch (error) {
-      set({
-        error:
-          error instanceof Error
-            ? error.message
-            : "No se pudo crear el activo.",
-      });
-    }
-  },
+        const assets =
+          await assetService.getAll();
 
-  updateAsset: async (asset) => {
-    try {
-      await assetService.update(asset);
+        if (import.meta.env.DEV) {
 
-      set((state) => ({
-        assets: state.assets.map((item) =>
-          item.id === asset.id ? asset : item
-        ),
-      }));
-    } catch (error) {
-      set({
-        error:
-          error instanceof Error
-            ? error.message
-            : "No se pudo actualizar el activo.",
-      });
-    }
-  },
+          console.log(
+            "ASSET STORE",
+            assets
+          );
 
-  deleteAsset: async (id) => {
-    try {
-      await assetService.delete(id);
+        }
 
-      set((state) => ({
-        assets: state.assets.filter((item) => item.id !== id),
-      }));
-    } catch (error) {
-      set({
-        error:
-          error instanceof Error
-            ? error.message
-            : "No se pudo eliminar el activo.",
-      });
-    }
-  },
+        set({
 
-  clearAssets: async () => {
-    try {
-      await assetService.clear();
+          assets,
 
-      set({
-        assets: [],
-      });
-    } catch (error) {
-      set({
-        error:
-          error instanceof Error
-            ? error.message
-            : "No se pudieron eliminar los activos.",
-      });
-    }
-  },
-}));
+          isLoading: false,
+
+        });
+
+      } catch (error) {
+
+        set({
+
+          error:
+
+            error instanceof Error
+
+              ? error.message
+
+              : "No se pudieron cargar los activos.",
+
+          isLoading: false,
+
+        });
+
+      }
+
+    },
+
+    createAsset: async (asset) => {
+
+      try {
+
+        const created =
+          await assetService.create(
+            asset
+          );
+
+        set((state) => ({
+
+          assets: [
+
+            created,
+
+            ...state.assets,
+
+          ],
+
+        }));
+
+      } catch (error) {
+
+        set({
+
+          error:
+
+            error instanceof Error
+
+              ? error.message
+
+              : "No se pudo crear el activo.",
+
+        });
+
+      }
+
+    },
+
+    updateAsset: async (asset) => {
+
+      try {
+
+        await assetService.update(
+          asset
+        );
+
+        set((state) => ({
+
+          assets:
+
+            state.assets.map(
+              (item) =>
+
+                item.id === asset.id
+
+                  ? asset
+
+                  : item
+
+            ),
+
+        }));
+
+      } catch (error) {
+
+        set({
+
+          error:
+
+            error instanceof Error
+
+              ? error.message
+
+              : "No se pudo actualizar el activo.",
+
+        });
+
+      }
+
+    },
+
+    deleteAsset: async (id) => {
+
+      try {
+
+        await assetService.delete(
+          id
+        );
+
+        set((state) => ({
+
+          assets:
+
+            state.assets.filter(
+              (item) =>
+                item.id !== id
+            ),
+
+        }));
+
+      } catch (error) {
+
+        set({
+
+          error:
+
+            error instanceof Error
+
+              ? error.message
+
+              : "No se pudo eliminar el activo.",
+
+        });
+
+      }
+
+    },
+
+    clearAssets: async () => {
+
+      try {
+
+        await assetService.clear();
+
+        set({
+
+          assets: [],
+
+        });
+
+      } catch (error) {
+
+        set({
+
+          error:
+
+            error instanceof Error
+
+              ? error.message
+
+              : "No se pudieron eliminar los activos.",
+
+        });
+
+      }
+
+    },
+
+  }));

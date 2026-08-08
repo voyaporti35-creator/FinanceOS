@@ -29,3 +29,13 @@ input {
   color: inherit;
 }
 
+select {
+  color: #111827;
+  background-color: #ffffff;
+  border: 1px solid #d1d5db;
+}
+
+option {
+  color: #111827;
+  background-color: #ffffff;
+}
