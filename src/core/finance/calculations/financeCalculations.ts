@@ -13,9 +13,7 @@ import {
   calculateLiabilityCount,
   calculateMonthlyDebtPayment,
   calculateTotalLiabilities,
-  calculateDebtRatio,
 } from "../../../modules/liabilities/utils/liabilityCalculations";
-
 
 
 export function calculateAccountBalance(
@@ -43,13 +41,11 @@ export function calculateAccountBalance(
         return balance;
       }
 
-
       if (
         transaction.accountId !== account.id
       ) {
         return balance;
       }
-
 
       switch (transaction.type) {
 
@@ -70,7 +66,6 @@ export function calculateAccountBalance(
 }
 
 
-
 export function calculateCurrentAccountBalance(
   account: Account,
   transactions: Transaction[]
@@ -82,7 +77,6 @@ export function calculateCurrentAccountBalance(
   );
 
 }
-
 
 
 export function calculateLiquidity(
@@ -103,7 +97,6 @@ export function calculateLiquidity(
 }
 
 
-
 export function calculateAccountCount(
   accounts: Account[]
 ): number {
@@ -113,7 +106,6 @@ export function calculateAccountCount(
 }
 
 
-
 export function calculateTransactionCount(
   transactions: Transaction[]
 ): number {
@@ -121,7 +113,6 @@ export function calculateTransactionCount(
   return transactions.length;
 
 }
-
 
 
 export function calculateLastTransactionDate(
@@ -134,7 +125,6 @@ export function calculateLastTransactionDate(
     return null;
   }
 
-
   return transactions
     .map(
       transaction =>
@@ -145,7 +135,6 @@ export function calculateLastTransactionDate(
     ?? null;
 
 }
-
 
 
 export function calculateNetWorth(
@@ -161,18 +150,15 @@ export function calculateNetWorth(
       transactions
     );
 
-
   const assetsTotal =
     calculateTotalAssets(
       assets
     );
 
-
   const liabilitiesTotal =
     calculateTotalLiabilities(
       liabilities
     );
-
 
   return (
     liquidity +
@@ -181,7 +167,6 @@ export function calculateNetWorth(
   );
 
 }
-
 
 
 export function calculateMonthlyIncome(
@@ -207,7 +192,6 @@ export function calculateMonthlyIncome(
 }
 
 
-
 export function calculateMonthlyExpenses(
   transactions: Transaction[],
   referenceDate: Date = new Date()
@@ -231,7 +215,6 @@ export function calculateMonthlyExpenses(
 }
 
 
-
 export function calculateMonthlySavings(
   income: number,
   expenses: number
@@ -240,7 +223,6 @@ export function calculateMonthlySavings(
   return income - expenses;
 
 }
-
 
 
 export function calculateSavingsRate(
@@ -254,11 +236,9 @@ export function calculateSavingsRate(
     return 0;
   }
 
-
   return savings / income;
 
 }
-
 
 
 export function calculateInitialNetWorth(
@@ -274,7 +254,6 @@ export function calculateInitialNetWorth(
 }
 
 
-
 export function buildFinanceSnapshot(
   accounts: Account[],
   transactions: Transaction[],
@@ -283,13 +262,11 @@ export function buildFinanceSnapshot(
   liabilities: Liability[] = []
 ): FinanceSnapshot {
 
-
   const monthlyIncome =
     calculateMonthlyIncome(
       transactions,
       referenceDate
     );
-
 
   const monthlyExpenses =
     calculateMonthlyExpenses(
@@ -297,13 +274,11 @@ export function buildFinanceSnapshot(
       referenceDate
     );
 
-
   const monthlySavings =
     calculateMonthlySavings(
       monthlyIncome,
       monthlyExpenses
     );
-
 
   const liquidityTotal =
     calculateLiquidity(
@@ -311,18 +286,29 @@ export function buildFinanceSnapshot(
       transactions
     );
 
-
   const totalAssets =
     calculateTotalAssets(
       assets
     );
-
 
   const totalLiabilities =
     calculateTotalLiabilities(
       liabilities
     );
 
+  const monthlyDebtPayment =
+    calculateMonthlyDebtPayment(
+      liabilities
+    );
+
+  /*
+   * Ratio de endeudamiento:
+   * pago mensual de deuda / ingresos mensuales
+   */
+  const debtRatio =
+    monthlyIncome > 0
+      ? monthlyDebtPayment / monthlyIncome
+      : 0;
 
   return {
 
@@ -337,13 +323,11 @@ export function buildFinanceSnapshot(
       totalAssets -
       totalLiabilities,
 
-
     monthlyIncome,
 
     monthlyExpenses,
 
     monthlySavings,
-
 
     savingsRate:
       calculateSavingsRate(
@@ -351,59 +335,43 @@ export function buildFinanceSnapshot(
         monthlySavings
       ),
 
-
     initialNetWorth:
       calculateInitialNetWorth(
         accounts
       ),
-
 
     accountCount:
       calculateAccountCount(
         accounts
       ),
 
-
     transactionCount:
       calculateTransactionCount(
         transactions
       ),
-
 
     lastTransactionDate:
       calculateLastTransactionDate(
         transactions
       ),
 
-
     assetCount:
       calculateAssetCount(
         assets
       ),
-
 
     liabilityCount:
       calculateLiabilityCount(
         liabilities
       ),
 
+    monthlyDebtPayment,
 
-    monthlyDebtPayment:
-      calculateMonthlyDebtPayment(
-        liabilities
-      ),
-
-
-    debtRatio:
-      calculateDebtRatio(
-        liabilities,
-        totalAssets
-      ),
+    debtRatio,
 
   };
 
 }
-
 
 
 function isTransactionInMonth(
@@ -419,10 +387,8 @@ function isTransactionInMonth(
       .split("-")
       .map(Number);
 
-
   return (
-    year === referenceDate.getFullYear()
-    &&
+    year === referenceDate.getFullYear() &&
     month - 1 === referenceDate.getMonth()
   );
 
