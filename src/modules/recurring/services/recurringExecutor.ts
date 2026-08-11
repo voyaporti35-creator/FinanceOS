@@ -31,10 +31,15 @@ export const recurringExecutor = {
 
       let executedCount = 0;
 
+      const now =
+        new Date();
+
       const today =
-        new Date()
-          .toISOString()
-          .slice(0, 10);
+        `${now.getFullYear()}-${String(
+          now.getMonth() + 1
+        ).padStart(2, "0")}-${String(
+          now.getDate()
+        ).padStart(2, "0")}`;
 
       for (
         const recurring
@@ -65,14 +70,6 @@ export const recurringExecutor = {
               transaction.date === today
           );
 
-        /*
-         * Si la transacción de hoy ya existe,
-         * la recurrencia ya fue ejecutada.
-         *
-         * En ese caso no creamos otra transacción,
-         * pero sí corregimos la recurrencia y avanzamos
-         * su próxima ejecución.
-         */
         if (
           alreadyExecuted
         ) {

@@ -31,6 +31,7 @@ function calculateSavingsScore(
 }
 
 function calculateDebtScore(
+  liquidity: number,
   assets: number,
   debts: number
 ): number {
@@ -39,12 +40,15 @@ function calculateDebtScore(
     return 100;
   }
 
-  if (assets <= 0) {
+  const financialResources =
+    liquidity + assets;
+
+  if (financialResources <= 0) {
     return 0;
   }
 
   const ratio =
-    debts / assets;
+    debts / financialResources;
 
   return clamp(
     (1 - ratio) * 100
@@ -53,23 +57,27 @@ function calculateDebtScore(
 }
 
 function calculateWealthScore(
+  liquidity: number,
   assets: number,
   debts: number
 ): number {
 
+  const totalResources =
+    liquidity + assets;
+
   const netWorth =
-    assets - debts;
+    totalResources - debts;
 
   if (netWorth <= 0) {
     return 0;
   }
 
-  if (assets <= 0) {
+  if (totalResources <= 0) {
     return 0;
   }
 
   return clamp(
-    (netWorth / assets) * 100
+    (netWorth / totalResources) * 100
   );
 
 }
@@ -134,12 +142,14 @@ export function calculateFinancialHealth(
 
   const debtScore =
     calculateDebtScore(
+      liquidity,
       assets,
       debts
     );
 
   const wealthScore =
     calculateWealthScore(
+      liquidity,
       assets,
       debts
     );

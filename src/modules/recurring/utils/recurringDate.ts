@@ -46,9 +46,20 @@ export function formatDate(
   date: Date
 ): string {
 
-  return date
-    .toISOString()
-    .slice(0, 10);
+  const year =
+    date.getFullYear();
+
+  const month =
+    String(
+      date.getMonth() + 1
+    ).padStart(2, "0");
+
+  const day =
+    String(
+      date.getDate()
+    ).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
 
 }
 
@@ -108,33 +119,43 @@ export function calculateNextExecution(
   ) {
 
     case "daily":
+
       next.setDate(
         next.getDate() + 1
       );
+
       break;
 
     case "weekly":
+
       next.setDate(
         next.getDate() + 7
       );
+
       break;
 
     case "monthly":
+
       next.setMonth(
         next.getMonth() + 1
       );
+
       break;
 
     case "quarterly":
+
       next.setMonth(
         next.getMonth() + 3
       );
+
       break;
 
     case "yearly":
+
       next.setFullYear(
         next.getFullYear() + 1
       );
+
       break;
 
   }
