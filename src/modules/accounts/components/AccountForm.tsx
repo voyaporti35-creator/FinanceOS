@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { FormEvent } from "react";
 
 import type {
@@ -29,28 +29,26 @@ export default function AccountForm({
 
   const defaultBank = BANKS[0];
 
-  const [name, setName] = useState("");
-  const [type, setType] =
-    useState<AccountType>("bank");
-  const [initialBalance, setInitialBalance] =
-    useState(0);
-  const [selectedBankId, setSelectedBankId] =
-    useState(defaultBank.id);
-
-  useEffect(() => {
-
-    if (!initialAccount) {
-      return;
-    }
-
-    setName(initialAccount.name);
-    setType(initialAccount.type);
-    setInitialBalance(initialAccount.initialBalance);
-    setSelectedBankId(
-      initialAccount.bankId ?? defaultBank.id
+  const [name, setName] =
+    useState(
+      initialAccount?.name ?? ""
     );
 
-  }, [initialAccount]);
+  const [type, setType] =
+    useState<AccountType>(
+      initialAccount?.type ?? "bank"
+    );
+
+  const [initialBalance, setInitialBalance] =
+    useState(
+      initialAccount?.initialBalance ?? 0
+    );
+
+  const [selectedBankId, setSelectedBankId] =
+    useState(
+      initialAccount?.bankId ??
+      defaultBank.id
+    );
 
   function handleSubmit(
     event: FormEvent<HTMLFormElement>

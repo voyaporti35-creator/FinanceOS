@@ -1,6 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
-import { Button, Input, Select } from "../../../components/ui";
+import {
+  Button,
+  Input,
+  Select,
+} from "../../../components/ui";
 
 import { useAccountStore } from "../../accounts/store/accountStore";
 import { useCategories } from "../../categories/hooks/useCategories";
@@ -10,9 +18,7 @@ import type {
   TransactionType,
 } from "../types/transaction";
 
-
 interface TransactionFormProps {
-
   initialTransaction?: Transaction;
 
   onSubmit: (
@@ -25,15 +31,12 @@ interface TransactionFormProps {
   onCancel: () => void;
 
   submitLabel: string;
-
 }
-
 
 const defaultValues: Omit<
   Transaction,
   "id" | "createdAt" | "updatedAt"
 > = {
-
   date: new Date()
     .toISOString()
     .slice(0, 10),
@@ -57,15 +60,12 @@ const defaultValues: Omit<
   isRecurring: false,
 
   recurringId: undefined,
-
 };
-
 
 const transactionTypes: Array<{
   value: TransactionType;
   label: string;
 }> = [
-
   {
     value: "income",
     label: "Ingreso",
@@ -80,9 +80,7 @@ const transactionTypes: Array<{
     value: "transfer",
     label: "Transferencia",
   },
-
 ];
-
 
 export function TransactionForm({
   initialTransaction,
@@ -90,93 +88,71 @@ export function TransactionForm({
   onCancel,
   submitLabel,
 }: TransactionFormProps) {
-
-
   const accounts = useAccountStore(
     (state) => state.accounts
   );
 
-
   const loadAccounts = useAccountStore(
     (state) => state.loadAccounts
   );
-
 
   const {
     categories,
     ensureSystemCategories,
   } = useCategories();
 
+  const [form, setForm] =
+    useState<
+      Omit<
+        Transaction,
+        "id" | "createdAt" | "updatedAt"
+      >
+    >(
+      initialTransaction
+        ? {
+            date:
+              initialTransaction.date,
 
+            amount:
+              initialTransaction.amount,
 
-  const [form, setForm] = useState<
-    Omit<
-      Transaction,
-      "id" | "createdAt" | "updatedAt"
-    >
-  >(defaultValues);
+            description:
+              initialTransaction.description,
 
+            accountId:
+              initialTransaction.accountId,
 
+            destinationAccountId:
+              initialTransaction.destinationAccountId,
+
+            type:
+              initialTransaction.type,
+
+            category:
+              initialTransaction.category,
+
+            transferId:
+              initialTransaction.transferId,
+
+            notes:
+              initialTransaction.notes,
+
+            isRecurring:
+              initialTransaction.isRecurring,
+
+            recurringId:
+              initialTransaction.recurringId,
+          }
+        : defaultValues
+    );
 
   useEffect(() => {
-
     void loadAccounts();
-
   }, [loadAccounts]);
 
-
-
   useEffect(() => {
-
     void ensureSystemCategories();
-
   }, [ensureSystemCategories]);
-
-
-
-  useEffect(() => {
-
-    if (!initialTransaction) {
-      return;
-    }
-
-
-    setForm({
-
-      date: initialTransaction.date,
-
-      amount: initialTransaction.amount,
-
-      description: initialTransaction.description,
-
-      accountId: initialTransaction.accountId,
-
-      destinationAccountId:
-        initialTransaction.destinationAccountId,
-
-      type: initialTransaction.type,
-
-      category:
-        initialTransaction.category,
-
-      transferId:
-        initialTransaction.transferId,
-
-      notes:
-        initialTransaction.notes,
-
-      isRecurring:
-        initialTransaction.isRecurring,
-
-      recurringId:
-        initialTransaction.recurringId,
-
-    });
-
-
-  }, [initialTransaction]);
-
-
 
   const accountOptions = useMemo(
     () =>
@@ -186,11 +162,8 @@ export function TransactionForm({
           label: account.name,
         })
       ),
-
     [accounts]
   );
-
-
 
   const categoryOptions = useMemo(
     () =>
@@ -200,83 +173,57 @@ export function TransactionForm({
           label: category.name,
         })
       ),
-
     [categories]
   );
-
-
 
   const handleSubmit = async (
     event: React.FormEvent<HTMLFormElement>
   ) => {
-
     event.preventDefault();
 
-
-    
-
     if (!form.accountId) {
-
       console.log(
         "SIN CUENTA ORIGEN"
       );
 
       return;
-
     }
 
-
     if (form.amount <= 0) {
-
       console.log(
         "IMPORTE INVALIDO"
       );
 
       return;
-
     }
-
 
     if (
       form.type === "transfer" &&
       !form.destinationAccountId
     ) {
-
       console.log(
         "TRANSFERENCIA SIN DESTINO",
         form
       );
 
       return;
-
     }
 
-
-
     await onSubmit({
-
       ...form,
 
       destinationAccountId:
         form.type === "transfer"
           ? form.destinationAccountId
           : undefined,
-
     });
-
-
   };
 
-
-
   return (
-
     <form
       className="space-y-4"
       onSubmit={handleSubmit}
     >
-
-
       <Input
         label="Fecha"
         type="date"
@@ -288,8 +235,6 @@ export function TransactionForm({
           })
         }
       />
-
-
 
       <Input
         label="Importe"
@@ -305,11 +250,11 @@ export function TransactionForm({
         }
       />
 
-
-
       <Input
         label="Descripción"
-        value={form.description ?? ""}
+        value={
+          form.description ?? ""
+        }
         onChange={(event) =>
           setForm({
             ...form,
@@ -319,17 +264,13 @@ export function TransactionForm({
         }
       />
 
-
-
       <Select
         label="Tipo"
         value={form.type}
         options={transactionTypes}
         onChange={(event) => {
-
           const type =
             event.target.value as TransactionType;
-
 
           setForm({
             ...form,
@@ -340,13 +281,9 @@ export function TransactionForm({
               type === "transfer"
                 ? form.destinationAccountId
                 : undefined,
-
           });
-
         }}
       />
-
-
 
       <Select
         label="Cuenta origen"
@@ -367,85 +304,65 @@ export function TransactionForm({
         }
       />
 
+      {form.type === "transfer" && (
+        <Select
+          label="Cuenta destino"
+          value={
+            form.destinationAccountId ??
+            ""
+          }
+          options={[
+            {
+              value: "",
+              label:
+                "Selecciona cuenta destino",
+            },
 
+            ...accountOptions.filter(
+              (account) =>
+                account.value !==
+                form.accountId
+            ),
+          ]}
+          onChange={(event) => {
+            setForm((previous) => ({
+              ...previous,
 
-      {
-        form.type === "transfer" && (
+              destinationAccountId:
+                event.target.value ||
+                undefined,
+            }));
+          }}
+        />
+      )}
 
-          <Select
-            label="Cuenta destino"
-            value={
-              form.destinationAccountId ?? ""
-            }
-            options={[
-              {
-                value: "",
-                label: "Selecciona cuenta destino",
-              },
+      {form.type !== "transfer" && (
+        <Select
+          label="Categoría"
+          value={
+            form.category ?? ""
+          }
+          options={[
+            {
+              value: "",
+              label:
+                "Selecciona categoría",
+            },
 
-              ...accountOptions.filter(
-                (account) =>
-                  account.value !== form.accountId
-              ),
-            ]}
-
-            onChange={(event) => {
-
-              
-
-
-              setForm((previous) => ({
-
-                ...previous,
-
-                destinationAccountId:
-                  event.target.value ||
-                  undefined,
-
-              }));
-
-            }}
-
-          />
-
-        )
-      }
-
-
-
-      {
-        form.type !== "transfer" && (
-
-          <Select
-            label="Categoría"
-            value={
-              form.category ?? ""
-            }
-            options={[
-              {
-                value: "",
-                label: "Selecciona categoría",
-              },
-
-              ...categoryOptions,
-            ]}
-            onChange={(event) =>
-              setForm({
-                ...form,
-                category:
-                  event.target.value ||
-                  undefined,
-              })
-            }
-          />
-
-        )
-      }
-
-
+            ...categoryOptions,
+          ]}
+          onChange={(event) =>
+            setForm({
+              ...form,
+              category:
+                event.target.value ||
+                undefined,
+            })
+          }
+        />
+      )}
 
       <div className="flex justify-end gap-3">
-
         <Button
           type="button"
           variant="secondary"
@@ -454,20 +371,13 @@ export function TransactionForm({
           Cancelar
         </Button>
 
-
         <Button
           type="submit"
           variant="primary"
         >
           {submitLabel}
         </Button>
-
-
       </div>
-
-
     </form>
-
   );
-
 }
