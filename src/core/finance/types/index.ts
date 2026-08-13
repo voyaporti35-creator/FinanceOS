@@ -23,8 +23,6 @@ export interface FinanceSnapshot {
 
   // Assets
   assetCount: number;
-
-  // Valor de activos agrupado por tipo
   assetsByType: Record<string, number>;
 
   // Liabilities
