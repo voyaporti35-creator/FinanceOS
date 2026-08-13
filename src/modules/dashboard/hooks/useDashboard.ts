@@ -7,30 +7,9 @@ import { recurringEngine } from "../../recurring/services/recurringEngine";
 import { recurringExecutor } from "../../recurring/services/recurringExecutor";
 import { recurringService } from "../../recurring/services/recurringService";
 
-import { useAccountStore } from "../../accounts/store/accountStore";
-import { useTransactionStore } from "../../transactions/store/transactionStore";
-import { useAssetStore } from "../../assets/store/assetStore";
-import { useLiabilityStore } from "../../liabilities/store/liabilityStore";
-
 import type { DashboardViewModel } from "../types";
 
 export function useDashboard() {
-  const loadAccounts = useAccountStore(
-    (state) => state.loadAccounts
-  );
-
-  const loadTransactions = useTransactionStore(
-    (state) => state.loadTransactions
-  );
-
-  const loadAssets = useAssetStore(
-    (state) => state.loadAssets
-  );
-
-  const loadLiabilities = useLiabilityStore(
-    (state) => state.loadLiabilities
-  );
-
   const [viewModel, setViewModel] =
     useState<DashboardViewModel | null>(null);
 
@@ -48,25 +27,29 @@ export function useDashboard() {
         setIsLoading(true);
         setError(null);
 
-        await Promise.all([
-          loadAccounts(),
-          loadTransactions(),
-          loadAssets(),
-          loadLiabilities(),
-        ]);
-
+        /*
+         * Ejecutamos primero las operaciones recurrentes.
+         *
+         * El executor trabaja directamente sobre Dexie,
+         * por lo que no necesitamos cargar los stores antes.
+         */
         await recurringExecutor.execute();
 
-        await Promise.all([
-          loadAccounts(),
-          loadTransactions(),
-          loadAssets(),
-          loadLiabilities(),
-        ]);
-
+        /*
+         * financeService es la fuente única del snapshot financiero.
+         *
+         * Internamente carga:
+         * - cuentas
+         * - transacciones
+         * - activos
+         * - pasivos
+         */
         const snapshot =
           await financeService.getSnapshot();
 
+        /*
+         * Recurrentes para información del Dashboard.
+         */
         const recurringTransactions =
           await recurringService.getAll();
 
@@ -84,10 +67,10 @@ export function useDashboard() {
               )
             )[0] ?? null;
 
-        const monthlyCashflow =
-          snapshot.monthlyIncome -
-          snapshot.monthlyExpenses;
-
+        /*
+         * Salud financiera calculada desde
+         * el snapshot real del core financiero.
+         */
         const health =
           calculateFinancialHealth({
             income: snapshot.monthlyIncome,
@@ -98,37 +81,82 @@ export function useDashboard() {
           });
 
         const nextViewModel: DashboardViewModel = {
-          netWorth: snapshot.netWorth,
-          liquidity: snapshot.liquidityTotal,
-          assets: snapshot.totalAssets,
-          liabilities: snapshot.totalLiabilities,
+          /*
+           * Patrimonio
+           */
+          netWorth:
+            snapshot.netWorth,
 
-          monthlyIncome: snapshot.monthlyIncome,
-          monthlyExpenses: snapshot.monthlyExpenses,
-          monthlySavings: monthlyCashflow,
-          savingsRate: snapshot.savingsRate,
+          liquidity:
+            snapshot.liquidityTotal,
 
-          financialHealth: health,
+          assets:
+            snapshot.totalAssets,
 
-          accountCount: snapshot.accountCount,
-          transactionCount: snapshot.transactionCount,
+          liabilities:
+            snapshot.totalLiabilities,
+
+          /*
+           * Flujo mensual
+           */
+          monthlyIncome:
+            snapshot.monthlyIncome,
+
+          monthlyExpenses:
+            snapshot.monthlyExpenses,
+
+          monthlySavings:
+            snapshot.monthlySavings,
+
+          savingsRate:
+            snapshot.savingsRate,
+
+          /*
+           * Salud financiera
+           */
+          financialHealth:
+            health,
+
+          /*
+           * Actividad
+           */
+          accountCount:
+            snapshot.accountCount,
+
+          transactionCount:
+            snapshot.transactionCount,
+
           lastTransactionDate:
             snapshot.lastTransactionDate,
 
+          /*
+           * Recurrentes
+           */
           nextRecurringDate:
             nextRecurring?.nextExecution ?? null,
 
           pendingRecurringCount:
             pendingRecurring.length,
 
+          /*
+           * Hipoteca / deuda
+           *
+           * Actualmente utilizamos el total de pasivos.
+           * Cuando el módulo hipotecario esté más desarrollado
+           * podremos separar específicamente la hipoteca.
+           */
           mortgageDebt:
             snapshot.totalLiabilities,
 
           mortgageMonthlyPayment:
             snapshot.monthlyDebtPayment,
 
-          mortgageFreeDate: null,
+          mortgageFreeDate:
+            null,
 
+          /*
+           * Metadatos
+           */
           updatedAt:
             new Date().toLocaleString("es-ES"),
         };
@@ -158,12 +186,7 @@ export function useDashboard() {
     return () => {
       isActive = false;
     };
-  }, [
-    loadAccounts,
-    loadTransactions,
-    loadAssets,
-    loadLiabilities,
-  ]);
+  }, []);
 
   return useMemo(
     () => ({
@@ -171,6 +194,10 @@ export function useDashboard() {
       isLoading,
       error,
     }),
-    [viewModel, isLoading, error]
+    [
+      viewModel,
+      isLoading,
+      error,
+    ]
   );
 }

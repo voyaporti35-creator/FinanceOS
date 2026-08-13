@@ -6,6 +6,7 @@ import type { FinanceSnapshot } from "../types";
 
 import {
   calculateAssetCount,
+  calculateAssetsByType,
   calculateTotalAssets,
 } from "../../../modules/assets/utils/assetCalculations";
 
@@ -15,20 +16,14 @@ import {
   calculateTotalLiabilities,
 } from "../../../modules/liabilities/utils/liabilityCalculations";
 
-
 export function calculateAccountBalance(
   account: Account,
   transactions: Transaction[]
 ): number {
-
   return transactions.reduce(
     (balance, transaction) => {
-
       if (transaction.type === "transfer") {
-
-        if (
-          transaction.accountId === account.id
-        ) {
+        if (transaction.accountId === account.id) {
           return balance - transaction.amount;
         }
 
@@ -41,14 +36,11 @@ export function calculateAccountBalance(
         return balance;
       }
 
-      if (
-        transaction.accountId !== account.id
-      ) {
+      if (transaction.accountId !== account.id) {
         return balance;
       }
 
       switch (transaction.type) {
-
         case "income":
           return balance + transaction.amount;
 
@@ -58,32 +50,25 @@ export function calculateAccountBalance(
         default:
           return balance;
       }
-
     },
     account.initialBalance
   );
-
 }
-
 
 export function calculateCurrentAccountBalance(
   account: Account,
   transactions: Transaction[]
 ): number {
-
   return calculateAccountBalance(
     account,
     transactions
   );
-
 }
-
 
 export function calculateLiquidity(
   accounts: Account[],
   transactions: Transaction[]
 ): number {
-
   return accounts.reduce(
     (total, account) =>
       total +
@@ -93,49 +78,34 @@ export function calculateLiquidity(
       ),
     0
   );
-
 }
-
 
 export function calculateAccountCount(
   accounts: Account[]
 ): number {
-
   return accounts.length;
-
 }
-
 
 export function calculateTransactionCount(
   transactions: Transaction[]
 ): number {
-
   return transactions.length;
-
 }
-
 
 export function calculateLastTransactionDate(
   transactions: Transaction[]
 ): string | null {
-
-  if (
-    transactions.length === 0
-  ) {
+  if (transactions.length === 0) {
     return null;
   }
 
-  return transactions
-    .map(
-      transaction =>
-        transaction.date
-    )
-    .sort()
-    .at(-1)
-    ?? null;
-
+  return (
+    transactions
+      .map((transaction) => transaction.date)
+      .sort()
+      .at(-1) ?? null
+  );
 }
-
 
 export function calculateNetWorth(
   accounts: Account[],
@@ -143,7 +113,6 @@ export function calculateNetWorth(
   assets: Asset[],
   liabilities: Liability[]
 ): number {
-
   const liquidity =
     calculateLiquidity(
       accounts,
@@ -151,9 +120,7 @@ export function calculateNetWorth(
     );
 
   const assetsTotal =
-    calculateTotalAssets(
-      assets
-    );
+    calculateTotalAssets(assets);
 
   const liabilitiesTotal =
     calculateTotalLiabilities(
@@ -165,18 +132,15 @@ export function calculateNetWorth(
     assetsTotal -
     liabilitiesTotal
   );
-
 }
-
 
 export function calculateMonthlyIncome(
   transactions: Transaction[],
   referenceDate: Date = new Date()
 ): number {
-
   return transactions
     .filter(
-      transaction =>
+      (transaction) =>
         transaction.type === "income" &&
         isTransactionInMonth(
           transaction,
@@ -188,18 +152,15 @@ export function calculateMonthlyIncome(
         total + transaction.amount,
       0
     );
-
 }
-
 
 export function calculateMonthlyExpenses(
   transactions: Transaction[],
   referenceDate: Date = new Date()
 ): number {
-
   return transactions
     .filter(
-      transaction =>
+      (transaction) =>
         transaction.type === "expense" &&
         isTransactionInMonth(
           transaction,
@@ -211,48 +172,35 @@ export function calculateMonthlyExpenses(
         total + transaction.amount,
       0
     );
-
 }
-
 
 export function calculateMonthlySavings(
   income: number,
   expenses: number
 ): number {
-
   return income - expenses;
-
 }
-
 
 export function calculateSavingsRate(
   income: number,
   savings: number
 ): number {
-
-  if (
-    income <= 0
-  ) {
+  if (income <= 0) {
     return 0;
   }
 
   return savings / income;
-
 }
-
 
 export function calculateInitialNetWorth(
   accounts: Account[]
 ): number {
-
   return accounts.reduce(
     (total, account) =>
       total + account.initialBalance,
     0
   );
-
 }
-
 
 export function buildFinanceSnapshot(
   accounts: Account[],
@@ -261,7 +209,6 @@ export function buildFinanceSnapshot(
   assets: Asset[] = [],
   liabilities: Liability[] = []
 ): FinanceSnapshot {
-
   const monthlyIncome =
     calculateMonthlyIncome(
       transactions,
@@ -287,9 +234,7 @@ export function buildFinanceSnapshot(
     );
 
   const totalAssets =
-    calculateTotalAssets(
-      assets
-    );
+    calculateTotalAssets(assets);
 
   const totalLiabilities =
     calculateTotalLiabilities(
@@ -301,17 +246,13 @@ export function buildFinanceSnapshot(
       liabilities
     );
 
-  /*
-   * Ratio de endeudamiento:
-   * pago mensual de deuda / ingresos mensuales
-   */
   const debtRatio =
     monthlyIncome > 0
-      ? monthlyDebtPayment / monthlyIncome
+      ? monthlyDebtPayment /
+        monthlyIncome
       : 0;
 
   return {
-
     liquidityTotal,
 
     totalAssets,
@@ -360,6 +301,11 @@ export function buildFinanceSnapshot(
         assets
       ),
 
+    assetsByType:
+      calculateAssetsByType(
+        assets
+      ),
+
     liabilityCount:
       calculateLiabilityCount(
         liabilities
@@ -368,28 +314,24 @@ export function buildFinanceSnapshot(
     monthlyDebtPayment,
 
     debtRatio,
-
   };
-
 }
-
 
 function isTransactionInMonth(
   transaction: Transaction,
   referenceDate: Date
 ): boolean {
-
   const [
     year,
-    month
-  ] =
-    transaction.date
-      .split("-")
-      .map(Number);
+    month,
+  ] = transaction.date
+    .split("-")
+    .map(Number);
 
   return (
-    year === referenceDate.getFullYear() &&
-    month - 1 === referenceDate.getMonth()
+    year ===
+      referenceDate.getFullYear() &&
+    month - 1 ===
+      referenceDate.getMonth()
   );
-
 }

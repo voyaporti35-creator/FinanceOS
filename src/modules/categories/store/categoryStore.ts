@@ -25,7 +25,10 @@ interface CategoryStoreState {
     id: string
   ) => Promise<void>;
 
-  ensureSystemCategories: () => Promise<void>;
+  ensureSystemCategories: () => Promise<{
+    created: number;
+    total: number;
+  }>;
 
   cleanupDuplicates: () => Promise<{
     removed: number;
@@ -216,6 +219,7 @@ export const useCategoryStore =
             createdCategory,
             ...state.categories,
           ],
+          error: null,
         }));
       } catch (error) {
         set({
@@ -229,13 +233,8 @@ export const useCategoryStore =
 
     updateCategory: async (category) => {
       try {
-        const updatedCategory = {
-          ...category,
-          updatedAt: Date.now(),
-        };
-
         await categoryService.update(
-          updatedCategory
+          category
         );
 
         set((state) => ({
@@ -243,9 +242,13 @@ export const useCategoryStore =
             state.categories.map(
               (item) =>
                 item.id === category.id
-                  ? updatedCategory
+                  ? {
+                      ...category,
+                      updatedAt: Date.now(),
+                    }
                   : item
             ),
+          error: null,
         }));
       } catch (error) {
         set({
@@ -267,6 +270,7 @@ export const useCategoryStore =
               (item) =>
                 item.id !== id
             ),
+          error: null,
         }));
       } catch (error) {
         set({
@@ -283,28 +287,24 @@ export const useCategoryStore =
         const existing =
           await categoryService.getAll();
 
-        const existingKeys =
-          new Set(
-            existing.map(
-              (category) =>
-                `${category.type}:${category.name
-                  .trim()
-                  .toLowerCase()}`
-            )
-          );
+        const existingKeys = new Set(
+          existing.map(
+            (category) =>
+              `${category.type}:${category.name
+                .trim()
+                .toLowerCase()}`
+          )
+        );
 
-        for (
-          const category
-          of SYSTEM_CATEGORIES
-        ) {
+        let created = 0;
+
+        for (const category of SYSTEM_CATEGORIES) {
           const key =
             `${category.type}:${category.name
               .trim()
               .toLowerCase()}`;
 
-          if (
-            existingKeys.has(key)
-          ) {
+          if (existingKeys.has(key)) {
             continue;
           }
 
@@ -313,6 +313,7 @@ export const useCategoryStore =
           );
 
           existingKeys.add(key);
+          created++;
         }
 
         const categories =
@@ -322,13 +323,22 @@ export const useCategoryStore =
           categories,
           error: null,
         });
+
+        return {
+          created,
+          total: categories.length,
+        };
       } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "No se pudieron crear las categorías del sistema";
+
         set({
-          error:
-            error instanceof Error
-              ? error.message
-              : "No se pudieron crear las categorías del sistema",
+          error: message,
         });
+
+        throw error;
       }
     },
 
@@ -350,7 +360,7 @@ export const useCategoryStore =
         const message =
           error instanceof Error
             ? error.message
-            : "No se pudieron limpiar las categorías duplicadas";
+            : "No se pudieron limpiar los duplicados";
 
         set({
           error: message,
