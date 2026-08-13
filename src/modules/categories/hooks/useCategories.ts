@@ -5,11 +5,30 @@ export function useCategories() {
   const categories = useCategoryStore((state) => state.categories);
   const isLoading = useCategoryStore((state) => state.isLoading);
   const error = useCategoryStore((state) => state.error);
-  const loadCategories = useCategoryStore((state) => state.loadCategories);
-  const createCategory = useCategoryStore((state) => state.createCategory);
-  const updateCategory = useCategoryStore((state) => state.updateCategory);
-  const deleteCategory = useCategoryStore((state) => state.deleteCategory);
-  const ensureSystemCategories = useCategoryStore((state) => state.ensureSystemCategories);
+
+  const loadCategories = useCategoryStore(
+    (state) => state.loadCategories
+  );
+
+  const createCategory = useCategoryStore(
+    (state) => state.createCategory
+  );
+
+  const updateCategory = useCategoryStore(
+    (state) => state.updateCategory
+  );
+
+  const deleteCategory = useCategoryStore(
+    (state) => state.deleteCategory
+  );
+
+  const ensureSystemCategories = useCategoryStore(
+    (state) => state.ensureSystemCategories
+  );
+
+  const cleanupDuplicates = useCategoryStore(
+    (state) => state.cleanupDuplicates
+  );
 
   useEffect(() => {
     void loadCategories();
@@ -23,5 +42,6 @@ export function useCategories() {
     updateCategory,
     deleteCategory,
     ensureSystemCategories,
+    cleanupDuplicates,
   };
 }
